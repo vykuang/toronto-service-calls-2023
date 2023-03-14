@@ -7,6 +7,13 @@ This is a visualization of the service calls initiated by Toronto citizens. The 
 
 ## Project architecture
 
+- Data is pulled from the source on a monthly basis to sync with its refresh rate
+- data lake: GCS
+- data warehouse: Bigquery
+- batch processing: spark
+- orchestration: Prefect
+- Visualization: Metabase/Streamlit
+- IaC: Terraform
 
 ## Run it yourself!
 

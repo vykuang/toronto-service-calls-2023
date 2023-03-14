@@ -1,0 +1,11 @@
+# metainfo
+.ipynb_checkpoints
+.env
+.vscode/
+
+# pytest
+.pytest_cache/
+__pycache__/
+
+# temp files
+*.swp
