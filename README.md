@@ -7,13 +7,24 @@ This is a visualization of the service calls initiated by Toronto citizens. The 
 
 ## Project architecture
 
-- Data is pulled from the source on a monthly basis to sync with its refresh rate
+- Data is pulled on a monthly basis to sync with its refresh rate at the source
 - data lake: GCS
+    - stores raw csv and cleaned parquets
+- batch processing: dataproc (spark)
+    - remove outliers in dates
+    - remove entries without ward/FSA data
+    - feature engineer
 - data warehouse: Bigquery
-- batch processing: spark
+    - stores the various models used for visualizations
 - orchestration: Prefect
+    - facilitates monthly refresh: pull, process, store models
 - Visualization: Metabase/Streamlit
+    - combine with geojson to produce choropleth map
 - IaC: Terraform
+    - responsible for cloud infra
+    - bucket
+    - bigquery dataset
+    - dataproc cluster
 
 ## Run it yourself!
 

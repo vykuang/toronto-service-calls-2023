@@ -9,3 +9,9 @@ __pycache__/
 
 # temp files
 *.swp
+
+# test data files
+data/notebooks/
+# *.csv
+*.zip
+
