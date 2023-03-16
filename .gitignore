@@ -9,6 +9,7 @@ __pycache__/
 
 # temp files
 *.swp
+*.out
 
 # test data files
 data/notebooks/

@@ -41,4 +41,8 @@ Full credits to statscan and open data toronto for providing these datasets.
 - [article on using folium](https://realpython.com/python-folium-web-maps-from-data/)
 
 
+## Log
 
+- 23/3/14 - Outline project architecture - 311 service calls
+- 23/3/15 - download 311 service data from open data toronto
+- 23/3/16 - choropleth with geojson in folium
