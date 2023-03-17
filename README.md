@@ -1,6 +1,18 @@
-# Data engineering zoomcamp - Project
+# Data engineering zoomcamp - 311 Service Calls
 
 This is a visualization of the service calls initiated by Toronto citizens. The choropleth map is broken down into the resident's ward and their forward sortation area (FSA), as well as the types of requests being made. The result is a heatmap of the types of service requests fulfilled by each neighborhood in Toronto.
+
+## Motivation
+
+Besides finding the area with the most noise complaints, this project is an exercise in implementing a data pipeline that incorporates reliability, traceability, and resiliency. Concretely speaking, a pipeline following those principles should have these characteristics:
+
+- restartable - can each step be replayed without introducing duplicates or creating errors?
+- monitoring and logging - each step should provide some heartbeat pulse if successful, or error logs if otherwise
+- simple - no extra code
+- able to handle schema drift *or* enforce a data contract
+- efficiency - relating to reliability, how do we model our data to minimize compute? Perhaps via partitioning and/or clustering, or creating a compact view for end-user to query against, instead of querying against the whole dataset
+- able to handle late data
+- good data quality - processing to remove void entries, e.g. entries missing ward or FSA code
 
 ## Data visualization
 
@@ -16,8 +28,12 @@ This is a visualization of the service calls initiated by Toronto citizens. The 
     - feature engineer
 - data warehouse: Bigquery
     - stores the various models used for visualizations
+    - partitioning/clustering
 - orchestration: Prefect
     - facilitates monthly refresh: pull, process, store models
+    - monitoring and logging
+    - restarts
+    - handles late data
 - Visualization: Metabase/Streamlit
     - combine with geojson to produce choropleth map
 - IaC: Terraform
