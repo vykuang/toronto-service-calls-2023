@@ -2,10 +2,12 @@
 # coding: utf-8
 
 from pathlib import Path
+from google.cloud import storage
 import requests
 from shutil import unpack_archive
 import pandas as pd
 from tempfile import TemporaryDirectory
+import argparse
 from prefect import flow, task, get_run_logger
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
@@ -43,17 +45,17 @@ def get_zip_uri(year: str = "2020") -> str:
 
 
 @task(tags=["extract"])
-def extract(zip_uri: str, csv_dir: Path, chunk_size=10000):
+def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path:
     """
     Downloads zip from source to temporary dir, extracts and unzip the csv
-    to csv_dir
+    to tmp_dir
 
     Parameters:
     -------------
     zip_uri: str
         URI for the zip file to download, from open data directory
 
-    csv_dir: str
+    tmp_dir: str
         folder to store the unzipped csv
 
     chunk_size: int
@@ -61,18 +63,22 @@ def extract(zip_uri: str, csv_dir: Path, chunk_size=10000):
 
     Returns:
     --------
-    None
+    tmpcsv_path: Path
+        Temporary path to local csv to be uploaded
     """
     zipname = zip_uri.split("/")[-1]
     with requests.get(zip_uri, stream=True, timeout=4) as tmpzip:
         tmpzip.raise_for_status()
-        with TemporaryDirectory() as tmpdir:
-            tmpzip_path = Path(tmpdir) / zipname
+        # context mgr automatically removes .zip after extract
+        with TemporaryDirectory() as tmpzip_dir:
+            tmpzip_path = Path(tmpzip_dir) / zipname
             with open(tmpzip_path, "wb") as zipfile:
                 for chunk in tmpzip.iter_content(chunk_size=chunk_size):
                     zipfile.write(chunk)
 
-            unpack_archive(filename=tmpzip_path, extract_dir=csv_dir)
+            unpack_archive(filename=tmpzip_path, extract_dir=tmp_dir)
+
+    return Path(tmp_dir) / zipname.replace(".zip", ".csv")
 
 
 @task(tags=["extract"])
@@ -121,11 +127,59 @@ def convert_to_parquet(csv_path: Path, pq_path: Path, test: bool = False) -> Non
     df_union.to_parquet(pq_path, index=False)
 
 
+@task(tags=["extract"])
+def blob_exists(blob_path: str, bucket_name: str) -> bool:
+    """
+    Does this blob exist?
+    """
+    logger = get_run_logger()
+    gcs = storage.Client()
+    bucket = gcs.bucket(bucket_name=bucket_name)
+    exists = storage.Blob(bucket=bucket, name=blob_path).exists(client=gcs)
+    logger.info(f"{blob_path} already exists: {exists}")
+    return exists
+
+
+@task(tags=["extract"])
+def upload_gcs(bucket_name: str, src_file: Path, dst_file: str):
+    """
+    Upload the local parquet file to GCS
+    Ref: https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-python
+    Authentication woes:
+    https://cloud.google.com/docs/authentication/client-libraries
+    MUST SET UP APPLICATION DEFAULT CREDENTIALS FOR CLIENT LIBRARIES
+    DOES NOT USE SAME CREDS AS GCLOUD AUTH
+    USE gcloud auth application-default login
+    To use service accounts (instead of user accounts),
+    env var GOOGLE_APPLICATION_CREDENTIALS='/path/to/key.json'
+    especially relevant for docker images, if they have fine-grain
+    controlled permissions
+    not required if you're on a credentialled GCE
+    """
+    logger = get_run_logger()
+    logger.info(f"{bucket_name}: storage bucket\n{dst_file}: destination file")
+    gcs_client = storage.Client()
+    bucket = gcs_client.bucket(bucket_name)
+    blob = bucket.blob(dst_file)
+
+    # set to zero to avoid overwrite
+    try:
+        blob.upload_from_filename(
+            src_file,
+            # if_generation_match=int(replace),
+            timeout=90,
+        )
+    except Exception as e:
+        logger.error(f"Error raised:\n{e}")
+    logger.info(f"{src_file} uploaded to {dst_file}")
+
+
 @flow()
 def extract_service_calls(
+    bucket_name: str,
     year: str = "2020",
-    csv_dir: str = "../data/notebooks",
-    pq_dir: str = "../data/notebooks",
+    # csv_dir: str = "../data/notebooks",
+    # pq_dir: str = "../data/notebooks",
     overwrite: bool = True,
     test: bool = False,
 ):
@@ -135,19 +189,70 @@ def extract_service_calls(
     logger = get_run_logger()
     zip_uri = get_zip_uri(year)
     fname = zip_uri.split("/")[-1]
-    csv_path = Path(csv_dir) / fname.replace("zip", "csv")
-    if not csv_path.exists():
-        logger.info(f"downloading and extracting to {csv_path}")
-        extract(zip_uri=zip_uri, csv_dir=csv_dir)
-    else:
-        logger.info(f"{csv_path} already exists")
-    pq_path = Path(pq_dir) / fname.replace("zip", "parquet")
-    if not pq_path.exists() or overwrite:
-        logger.info(f"Converting to {pq_path}")
-        convert_to_parquet(csv_path=csv_path, pq_path=pq_path, test=test)
-    else:
-        logger.info(f"{pq_path} already exists")
+    # gsc paths
+    csv_path = f'raw/csv/{fname.replace("zip", "csv")}'
+    pq_path = f'raw/pq/{fname.replace("zip", "parquet")}'
+    csv_exists = blob_exists(csv_path, bucket_name)
+    pq_exists = blob_exists(pq_path, bucket_name)
+    # save csv to temp dir for conversion to pq and upload
+    with TemporaryDirectory() as tmp_dir:
+        if not pq_exists or overwrite:
+            if not csv_exists or overwrite:
+                logger.info(f"downloading from {zip_uri} and extracting to {tmp_dir}")
+                tmpcsv_path = extract(zip_uri=zip_uri, tmp_dir=tmp_dir)
+                logger.info(f"Uploading csv to {csv_path}")
+                upload_gcs(
+                    bucket_name=bucket_name, src_file=tmpcsv_path, dst_file=csv_path
+                )
+            else:
+                logger.warning(f"{csv_path} already exists")
+                tmpcsv_path = f"gs://{bucket_name}/{csv_path}"
+                logger.info(f"{tmpcsv_path} will be read instead")
+
+            logger.info(f"Converting to {pq_path}")
+            convert_to_parquet(
+                csv_path=tmpcsv_path, pq_path=f"gs://{bucket_name}/{pq_path}", test=test
+            )
+        else:
+            logger.warning(f"{pq_path} already exists")
 
 
 if __name__ == "__main__":
-    extract_service_calls(test=True)
+    parser = argparse.ArgumentParser(
+        prog="Fetch311Records",
+        description="Fetch 311 service records and stores as parquet",
+        epilog="DE zoomcamp project",
+    )
+    opt = parser.add_argument
+    opt(
+        "-b",
+        "--bucket_name",
+        type=str,
+        help="GCS bucket to store the CSV and parquet files",
+    )
+    opt("-y", "--year", default="2020", type=str)
+    # opt('-c', '--csv_dir', type=str, help='directory to store unzipped csv')
+    # opt('-p', '--pq_dir', type=str, help='directory to store parquet')
+    opt(
+        "-O",
+        "--overwrite",
+        action="store_true",
+        default=False,
+        help="If specified, overwrites existing parquet file",
+    )
+    opt(
+        "-t",
+        "--test",
+        action="store_true",
+        default=False,
+        help="If specified, only reads small section of csv",
+    )
+    args = parser.parse_args()
+    extract_service_calls(
+        bucket_name=args.bucket_name,
+        year=args.year,
+        # csv_dir=args.csv_dir,
+        # pq_dir=args.pq_dir,
+        overwrite=args.overwrite,
+        test=args.test,
+    )

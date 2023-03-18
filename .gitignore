@@ -16,3 +16,6 @@ data/notebooks/
 # *.csv
 *.zip
 
+# terraform artifacts
+.terraform
+.terraform.*
