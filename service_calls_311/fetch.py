@@ -45,7 +45,7 @@ def get_zip_uri(year: str = "2020") -> str:
 
 
 @task(tags=["extract"])
-def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path:
+def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path | None:
     """
     Downloads zip from source to temporary dir, extracts and unzip the csv
     to tmp_dir
@@ -63,7 +63,7 @@ def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path:
 
     Returns:
     --------
-    tmpcsv_path: Path
+    tmpcsv_path: Path | None
         Temporary path to local csv to be uploaded
     """
     zipname = zip_uri.split("/")[-1]
@@ -78,7 +78,11 @@ def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path:
 
             unpack_archive(filename=tmpzip_path, extract_dir=tmp_dir)
 
-    return Path(tmp_dir) / zipname.replace(".zip", ".csv")
+    if len(tmp_glob := list(tmp_dir.glob("*.csv"))) == 1:
+        tmpcsv_path = tmp_glob[0]
+    else:
+        tmpcsv_path = None
+    return tmpcsv_path
 
 
 @task(tags=["extract"])
@@ -101,7 +105,13 @@ def convert_to_parquet(csv_path: Path, pq_path: Path, test: bool = False) -> Non
         nrows = 100
     else:
         nrows = None
-    df = pd.read_csv(csv_path, nrows=nrows)
+    df = pd.read_csv(
+        csv_path,
+        nrows=nrows,
+        # can sub in a callable to process bad lines
+        # see https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
+        on_bad_lines="skip",
+    )
     logger.info(f"{len(df)} rows read\ncd ..dtypes: \n{df.dtypes}")
     # cast datetime
     creation_datetime = pd.to_datetime(df["Creation Date"])
@@ -111,10 +121,20 @@ def convert_to_parquet(csv_path: Path, pq_path: Path, test: bool = False) -> Non
     col_id = "ward_id"
 
     def extract_name_id(ward: str) -> pd.Series:
-        idx = ward.index("(")
-        ward_name = ward[: idx - 1]
-        ward_id = int(ward[idx + 1 : idx + 3])
-        return pd.Series([ward_name, ward_id], [col_name, col_id])
+        # "(" will not always be found. need to be more robust...
+        try:
+            idx = ward.index("(")
+            ward_name = ward[: idx - 1]
+            ward_id = int(ward[idx + 1 : idx + 3])
+
+        except ValueError as e:
+            if "substring not found" in repr(e):
+                logger.warning("Ward field did not have '(' to search for ID")
+                #  set to null
+                ward_name = None
+                ward_id = None
+        finally:
+            return pd.Series([ward_name, ward_id], [col_name, col_id])
 
     ward_ids = (
         df["Ward"].apply(extract_name_id).astype({col_name: "string", col_id: "Int8"})
@@ -180,7 +200,7 @@ def extract_service_calls(
     year: str = "2020",
     # csv_dir: str = "../data/notebooks",
     # pq_dir: str = "../data/notebooks",
-    overwrite: bool = True,
+    overwrite: bool = False,
     test: bool = False,
 ):
     """
@@ -199,7 +219,7 @@ def extract_service_calls(
         if not pq_exists or overwrite:
             if not csv_exists or overwrite:
                 logger.info(f"downloading from {zip_uri} and extracting to {tmp_dir}")
-                tmpcsv_path = extract(zip_uri=zip_uri, tmp_dir=tmp_dir)
+                tmpcsv_path = extract(zip_uri=zip_uri, tmp_dir=Path(tmp_dir))
                 logger.info(f"Uploading csv to {csv_path}")
                 upload_gcs(
                     bucket_name=bucket_name, src_file=tmpcsv_path, dst_file=csv_path

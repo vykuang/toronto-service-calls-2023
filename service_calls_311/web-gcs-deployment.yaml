@@ -1,0 +1,68 @@
+###
+### A complete description of a Prefect Deployment for flow 'extract-service-calls'
+###
+name: extract-service-calls
+description: Downloads the zipped csv from opendata API and stores as parquet
+version: beba6e1e0ad3aedd6c8d0f6198ba51d0
+# The work queue that will handle this deployment's runs
+work_queue_name: service-calls
+work_pool_name: default-agent-pool
+tags: []
+parameters:
+  bucket_name: service-calls-data-lake
+  year: '2023'
+schedule:
+  cron: 21 15 3 * *
+  timezone: null
+  day_or: true
+is_schedule_active: true
+infra_overrides: {}
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: extract-service-calls
+manifest_path: null
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command: null
+  stream_output: true
+  working_dir: null
+  _block_document_id: a48ac43f-2837-47ce-9139-bad1e7d7d8f0
+  _block_document_name: anonymous-936f46e9-a7b9-4800-86db-152f37aeff8c
+  _is_anonymous: true
+  block_type_slug: process
+  _block_type_slug: process
+storage: null
+path: /home/klang/to-service/service_calls_311
+entrypoint: fetch.py:extract_service_calls
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties:
+    bucket_name:
+      title: bucket_name
+      position: 0
+      type: string
+    year:
+      title: year
+      default: '2020'
+      position: 1
+      type: string
+    overwrite:
+      title: overwrite
+      default: false
+      position: 2
+      type: boolean
+    test:
+      title: test
+      default: false
+      position: 3
+      type: boolean
+  required:
+  - bucket_name
+  definitions: null
+timestamp: '2023-03-19T09:06:37.663743+00:00'
