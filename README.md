@@ -44,6 +44,28 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 ## Run it yourself!
 
+### Setup
+
+#### Terraform
+
+Create bucket for terraform backend and initialize
+
+```bash
+# set name
+TFSTATE_BUCKET=your-bucket-name
+# cd to terraform dir
+cd terraform/
+# make bucket
+gsutil mb \
+-l us-west1 \
+-b on \
+--pap enforced \
+gs://$TFSTATE_BUCKET
+# may have to add -migrate-state option if there is existing tfstate
+terraform init \
+-backend-config="bucket=$TFSTATE_BUCKET" \
+-backend-config="prefix=terraform/state"
+```
 
 ## data resources
 
