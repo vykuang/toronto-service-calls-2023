@@ -1,6 +1,6 @@
 # Data engineering zoomcamp - 311 Service Calls
 
-This is a visualization of the service calls initiated by Toronto citizens. The choropleth map is broken down into the resident's ward and their forward sortation area (FSA), as well as the types of requests being made. The result is a heatmap of the types of service requests fulfilled by each neighborhood in Toronto.
+This is a visualization of the service calls initiated by Toronto citizens. The choropleth map is broken down into the resident's ward and their forward sortation area (FSA), as well as the types of requests being made. The result is a heatmap of the types of service requests fulfilled for each neighborhood in Toronto.
 
 ## Motivation
 
