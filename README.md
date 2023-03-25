@@ -84,3 +84,5 @@ Full credits to statscan and open data toronto for providing these datasets.
 - 23/3/14 - Outline project architecture - 311 service calls
 - 23/3/15 - download 311 service data from open data toronto
 - 23/3/16 - choropleth with geojson in folium
+- 23/3/22 - add transform - UDF to extract season
+- 23/3/24 - add transform - SQL `CASE WHEN` to extract season
