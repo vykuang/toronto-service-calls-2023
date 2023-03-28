@@ -204,7 +204,7 @@ def extract_service_calls(
     test: bool = False,
 ):
     """
-    Downloads the zipped csv from opendata API and stores as parquet
+    Downloads the zipped csv from opendata API and stores as parquet in gcs
     """
     logger = get_run_logger()
     zip_uri = get_zip_uri(year)

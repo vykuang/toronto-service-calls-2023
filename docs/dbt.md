@@ -31,3 +31,4 @@
   - git clone/@git will not enable CI
   - alternatively, create managed repository via dbt, if the email used for dbt cloud is different from the email linked to your github account
 - prepare the raw datasets in the data warehouse for dbt to source from
+  - loading the data into the warehouse will be part of the upstream pipeline as orchestrated by prefect

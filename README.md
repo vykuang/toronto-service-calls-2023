@@ -21,14 +21,21 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 - Data is pulled on a monthly basis to sync with its refresh rate at the source
 - data lake: GCS
-    - stores raw csv and cleaned parquets
-- batch processing: dataproc (spark)
+    - stores raw csv and schema'd parquets
+- ~~batch processing: dataproc (spark)~~
+    - replaced in favour of dbt since distributed computing is not required here
     - remove outliers in dates
     - remove entries without ward/FSA data
     - feature engineer
 - data warehouse: Bigquery
+    - part of extraction to create a facts table with the schema'd parquets from gcs
+        - [`create_table` docs](https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_create_table)
     - stores the various models used for visualizations
     - partitioning/clustering
+- transform: dbt
+    - models the raw datasets that have been loaded onto bigquery
+    - documentation
+    - tests
 - orchestration: Prefect
     - facilitates monthly refresh: pull, process, store models
     - monitoring and logging
@@ -38,9 +45,10 @@ Besides finding the area with the most noise complaints, this project is an exer
     - combine with geojson to produce choropleth map
 - IaC: Terraform
     - responsible for cloud infra
-    - bucket
+    - gcs bucket
     - bigquery dataset
-    - dataproc cluster
+    - [service account with necessary permissions to manage cloud resources](https://registry.terraform.io/modules/terraform-google-modules/service-accounts/google/latest)
+    - ~~dataproc cluster~~
 
 ## Run it yourself!
 
@@ -86,3 +94,4 @@ Full credits to statscan and open data toronto for providing these datasets.
 - 23/3/16 - choropleth with geojson in folium
 - 23/3/22 - add transform - UDF to extract season
 - 23/3/24 - add transform - SQL `CASE WHEN` to extract season
+- 23/3/25 - add transform - top *n* types per ward, per season, and wards per type
