@@ -1,7 +1,7 @@
 terraform {
   required_version = ">= 1.0"
   # Can change from "local" to "gcs" (for google) or "s3" (for aws), if you would like to preserve your tf-state online
-  backend "gcs" {}  
+  backend "gcs" {}
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -40,6 +40,34 @@ resource "google_storage_bucket" "data-lake" {
 #     description = "Contains all tables for the 311 service call project"
 #     location = var.region
 # }
+
+# defines the role to be applied
+data "google_iam_policy" "prefect-role" {
+    binding {
+        role = "projects/de-zoom-83/roles/CustomStorageAdmin"
+        members = [
+            "serviceAccount:${google_service_account.prefect-agent.email}"
+        ]
+    }
+}
+
+# define the blank canvas service account
+resource "google_service_account" "prefect-agent" {
+    account_id = var.credentials_id
+    display_name = var.credentials_display
+    description = "Service account supplying permissions for prefect agent"
+    project = var.project
+}
+
+# assign the role to the service account
+resource "google_project_iam_member" "prefect-agent-iam" {
+    project = var.project
+    # service_account_id = google_service_account.prefect-agent.name
+    role = "roles/bigquery.dataEditor"
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+    #policy_data = data.google_iam_policy.prefect-role.policy_data
+}
+
 # resource "google_storage_bucket" "dp-staging" {
 #     name = var.dp_staging
 #     location = var.region
