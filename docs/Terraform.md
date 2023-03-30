@@ -214,3 +214,35 @@ Error setting IAM policy for project "de-zoom-83": googleapi: Error 403: Policy 
 ```
 
 From [this post here](https://stackoverflow.com/a/65661736) it seems that whichever account running this terraform command needs to have the `resourcemanager.projects.setIamPolicy` permission
+
+Predefined roles with that permission:
+
+- roles/iam.securityAdmin
+- roles/resourcemanager.projectIamAdmin
+
+Try adding that to my compute `admin` service account with 
+
+### service account background
+
+Service accounts are simultaneously resources that other principals can be granted access to, as well as principals that can be granted access to other resources.
+
+- in the former, a service account could be a default GCE service account with access to GCE resources, and we may want to grant those access to another account, e.g. user account
+- in the latter, we may have created a service account for a specific application, and we want to grant access from a default bigquery account to that newly created SA
+
+What we want to accomplish here is distinctly different, because we want to attach *roles* to our service account. These roles provide access to various cloud resources. The collection of *roles* make up the **IAM policy**, aka allow policy.
+
+What we're interested in is [granting roles to principals](https://cloud.google.com/iam/docs/granting-changing-revoking-access), which falls under managing access to projects, folders, and orgs. `Cloud Resource Manager API` must enabled in console:
+
+```bash
+gcloud projects add-iam-policy-binding PROJECT_ID \
+    --member=PRINCIPAL_TYPE:PRINCIPAL_ID\
+    --role=roles/iam.securityAdmin \
+    --condition=CONDITION
+```
+
+- PRINCIPAL_TYPE: is probably `serviceAccount`
+- PRINCIPAL_ID: the email associated with the account, or its unique numeric ID
+- roles: must start with roles/...
+- conditions: optional; must be fulfilled for the specified role to be granted. Not applicable to basic roles, e.g. roles/owner, editor, viewer
+- `remove-iam-policy-binding` to revoke the role
+- `set-iam-policy` overwrites instead of append, and requires passing a file that includes the complete list of policies for that project
