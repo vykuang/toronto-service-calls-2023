@@ -23,6 +23,19 @@ terraform apply
 
 to have terraform build the specified bucket.
 
+## Required permissions
+
+To allow terraform effect these infra changes, the account running `apply` will need these roles/permissions:
+
+- roles/resourcemanager.projectIamAdmin - assign roles to service accounts
+- roles/iam.roleAdmin - create custom roles
+- bigquery.datasets.create
+- bigquery.datasets.delete
+- storage.buckets.create
+- storage.buckets.delete
+
+If running as `Owner`, should be fine
+
 ## Backend
 
 [Offical docs](https://developer.hashicorp.com/terraform/language/settings/backends/configuration#partial-configuration)
@@ -141,6 +154,9 @@ There are several components:
 - google_service_account - creates the service account
 - google_service_account_iam_policy - assigns the roles to the account
     - there is also ...account_iam_*binding* and account_iam_*member* which update the policies as opposed to a blanket overwrite
+    - the above do *not* assign roles to service accounts; instead they treat the service accounts as resources, and allow other members, e.g. users or other service accounts to perform tasks as that service account
+    - so technically we could create a dummy SA, assign it permissions A, B, and C, then assign all the members to the dummy SA so that they could execute their tasks *as dummy SA*, which again, has the required permissions
+- more straightforwardly let's use `google_project_iam_policy`
 
 ### service account
 
@@ -194,6 +210,8 @@ Note the use of interpolation via `${...}` so that we can make use of `google_se
 
 ### IAM Policy assignment
 
+NOTE: this assigns `service_acount_id` as a resource to all `member/s`; it does not assign permission roles. In fact most likely the only role we'd use here is `roles/iam.serviceAccountUser` related. `roles/iam.serviceAccountAdmin` is required to manage access to SAs
+
 [docs here](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/google_service_account_iam#google_service_account_iam_policy)
 
 ```
@@ -220,7 +238,14 @@ Predefined roles with that permission:
 - roles/iam.securityAdmin
 - roles/resourcemanager.projectIamAdmin
 
-Try adding that to my compute `admin` service account with 
+Try adding that to my compute `admin` service account...
+
+The differences between the three are:
+
+- `policy` - sets all roles for all members in the project; defines a complete policy for the project
+- `binding` - defines all members of the role
+    - if we're binding role A to members F, H, and G had role A before, then `binding` would grant role A only to F and H, and revoke it from G
+- `member` - updates member list for that role
 
 ### service account background
 
@@ -243,6 +268,101 @@ gcloud projects add-iam-policy-binding PROJECT_ID \
 - PRINCIPAL_TYPE: is probably `serviceAccount`
 - PRINCIPAL_ID: the email associated with the account, or its unique numeric ID
 - roles: must start with roles/...
-- conditions: optional; must be fulfilled for the specified role to be granted. Not applicable to basic roles, e.g. roles/owner, editor, viewer
+- conditions: optional; must be fulfilled for the specified role to be granted. Not applicable to basic roles, e.g. roles/owner, editor, viewer.
+    - date/time
+    - resource attributes, e.g. prefix of account ID must match some pattern
 - `remove-iam-policy-binding` to revoke the role
 - `set-iam-policy` overwrites instead of append, and requires passing a file that includes the complete list of policies for that project
+
+After creating the SA and binding the necessary roles, create the key file with
+
+```bash
+gcloud iam service-accounts keys create key.json \
+    --iam-account=my-iam-account@my-project.iam.gserviceaccount.com \
+    --key-file-type=json
+```
+
+The terraform resource is `google_project_iam_binding` or `_member`; binding defines which members for this role, and member simply adds users to that role
+
+### `for_each`
+
+[offical docs](https://developer.hashicorp.com/terraform/language/meta-arguments/for_each)
+
+When applying multiple roles to our SA, the normal syntax requires one resource block per role, e.g.
+
+```tf
+resource "google_project_iam_member" "prefect-agent-iam" {
+    project = var.project
+    role = "roles/A"
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+}
+resource "google_project_iam_member" "prefect-agent-iam" {
+    project = var.project
+    role = "roles/B"
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+}
+```
+
+But we can declare a whole array in `variables.tf`, and then use `for_each` in `main.tf`:
+
+```tf
+# variables.tf
+variable "prefect_roles" {
+    description = "list of roles assigned to the executor service account"
+    type = set(string)
+    default = [
+        "roles/bigquery.dataEditor",
+        "roles/bigquery.jobUser",
+        "roles/storage.admin"
+    ]
+}
+
+# main.tf
+resource "google_project_iam_member" "prefect-agent-iam" {
+    project = var.project
+    for_each = var.prefect_roles
+    role = each.key
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+}
+```
+
+Terraform will expand `resource "google_project_iam_member"` as it iterates through our list. Use `each.key` to correspond to the set member, and `each.value` if it's a map instead of a list
+
+### Custom roles
+
+In the case where we know exactly what `permissions` are required, e.g. `storage.buckets.list`, we can create a custom role to remove excessive permissions from being granted to our service account.
+
+Requires `roles/iam.roleAdmin` to manage roles for a project
+
+[Terraform resource:](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/google_project_iam_custom_role)
+
+```tf
+resource "google_project_iam_custom_role" "custom-prefect-role" {
+  role_id     = "customPrefectAgent"    # required
+  title       = "Custom Prefect Agent"  # required
+  permissions = ["storage.bucket.get", "storage.bucket.list"] # required
+  description = "Custom role for agent to access cloud storage and create bigquery tables"
+}
+```
+
+[gcloud equiv:](https://cloud.google.com/sdk/gcloud/reference/iam/roles/create)
+
+```bash
+gcloud iam roles create ProjectUpdater \
+    --title=ProjectUpdater \
+    --permissions=resourcemanager.projects.get,resourcemanager.projects.update \
+    --project=myproject \
+    --description="Have access to get and update the project"
+```
+
+Alternatively, instead of passing `permissions`, pass `file` and point to path of JSON/YAML specifying the permissions
+
+## Modules
+
+Containers for multiple resources used together; consists of a collection of `.tf` or `.tf.json` kept together in a directory. Every terraform config has at least one module, the *root module*, containing `main.tf`
+
+Modules can also be imported from the terraform registry, made by official providers, e.g. google. Think of it like a python library that provides useful functions without you coding it from scratch
+
+## Best practice
+
+- `terraform fmt` to autoformat the `.tf` files
