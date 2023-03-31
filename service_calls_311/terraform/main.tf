@@ -11,6 +11,7 @@ terraform {
 provider "google" {
   project = var.project
   region  = var.region
+  zone = var.zone
   // credentials = file(var.credentials)  # Use this if you do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
 }
 
@@ -25,11 +26,11 @@ resource "google_storage_bucket" "data-lake" {
     enabled = false
   }
 }
-# resource "google_bigquery_dataset" "dataset" {
-#     dataset_id = var.bq_dataset
-#     description = "Contains all tables for the 311 service call project"
-#     location = var.region
-# }
+resource "google_bigquery_dataset" "dataset" {
+    dataset_id = var.bq_dataset
+    description = "Contains all tables for the 311 service call project"
+    location = var.region
+}
 
 
 # define the blank canvas service account
@@ -40,25 +41,71 @@ resource "google_service_account" "prefect-agent" {
   project      = var.project
 }
 
-resource "google_project_iam_custom_role" "custom-prefect-role" {
-  role_id = "customPrefectAgent"
-  title   = "Custom Prefect Agent"
-  # agent_permissions defined in variables.tf as set of strings
-  permissions = [for allow in var.agent_permissions : allow]
-  description = "Custom role for agent to access cloud storage and create bigquery tables"
+# resource "google_project_iam_custom_role" "custom-prefect-role" {
+#   role_id = "customPrefectAgent"
+#   title   = "Custom Prefect Agent"
+#   # agent_permissions defined in variables.tf as set of strings
+#   permissions = [for allow in var.agent_permissions : allow]
+#   description = "Custom role for agent to access cloud storage and create bigquery tables"
+# }
+
+# # assign the role to the service account
+# resource "google_project_iam_member" "prefect-agent-iam" {
+#   project = var.project
+#   # assigning predefined roles
+#   # for_each = var.prefect_roles
+#   # role = each.key
+#   # assigning the custom role
+#   role   = google_project_iam_custom_role.custom-prefect-role.id
+#   member = "serviceAccount:${google_service_account.prefect-agent.email}"
+# }
+
+# assign the bucket role to our service account
+resource "google_storage_bucket_iam_member" "prefect-agent-iam" {
+    bucket = google_storage_bucket.data-lake.name
+    role = "roles/storage.admin"
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
 }
 
-# assign the role to the service account
+resource "google_bigquery_dataset_iam_member" "prefect-agent-iam" {
+    dataset_id = google_bigquery_dataset.dataset.dataset_id
+    role = "roles/bigquery.admin"
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+}
+
+# still requires bigquery.jobUser at project level
 resource "google_project_iam_member" "prefect-agent-iam" {
-  project = var.project
-  # assigning predefined roles
-  # for_each = var.prefect_roles
-  # role = each.key
-  # assigning the custom role
-  role   = google_project_iam_custom_role.custom-prefect-role.id
-  member = "serviceAccount:${google_service_account.prefect-agent.email}"
+    project = var.project
+    role = "roles/bigquery.jobUser"
+    member = "serviceAccount:${google_service_account.prefect-agent.email}"
 }
 
+data "google_compute_image" "default" {
+    family  = "ubuntu-2004-lts"
+    project = "ubuntu-os-cloud"
+}
+resource "google_compute_instance" "default" {
+    name         = "test"
+    machine_type = "e2-medium"
+    boot_disk {
+        initialize_params {
+            size = 10
+            type = "pd-standard"
+            image = data.google_compute_image.default.self_link
+        }
+
+    }
+    network_interface {
+        network = "default"
+        access_config {
+
+        }
+    }
+    service_account {
+        email = google_service_account.prefect-agent.email
+        scopes = ["cloud-platform"]
+    }
+}
 # resource "google_storage_bucket" "dp-staging" {
 #     name = var.dp_staging
 #     location = var.region
