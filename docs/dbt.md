@@ -30,5 +30,8 @@
 - setup repo via github to allow continuous integration (e.g. run jobs on pull requests)
   - git clone/@git will not enable CI
   - alternatively, create managed repository via dbt, if the email used for dbt cloud is different from the email linked to your github account
+    - meant to trial dbt without needing a new repo
+    - must contact support to transfer contents out
+    - does not support pull requests, and so cannot automatically invoke `dbt build`
 - prepare the raw datasets in the data warehouse for dbt to source from
   - loading the data into the warehouse will be part of the upstream pipeline as orchestrated by prefect

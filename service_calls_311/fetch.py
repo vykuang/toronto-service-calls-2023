@@ -141,8 +141,14 @@ def convert_to_parquet(csv_path: Path, pq_path: Path, test: bool = False) -> Non
     )
 
     df_drop = df.drop(columns=["Creation Date", "Ward"]).astype("string")
+    # add ward_id and ward_name
     df_union = pd.concat([df_drop, ward_ids], axis=1)
+    # add datetime casted field
     df_union["creation_datetime"] = creation_datetime
+    # rename to remove capitals and spaces
+    df_union = df_union.rename(columns={"First 3 Chars of Postal Code": "fsa_code"})
+    df_union = df_union.rename(mapper=str.lower, axis="columns")
+    df_union.columns = df_union.columns.str.replace(" ", "_")
     logger.info(f"union cols:\n{df_union.columns}\n dtypes:\n{df_union.dtypes}")
     df_union.to_parquet(pq_path, index=False)
 
