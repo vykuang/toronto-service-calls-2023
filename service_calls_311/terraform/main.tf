@@ -8,18 +8,29 @@ terraform {
     }
   }
 }
+
 provider "google" {
-  project = var.project
+  project = var.project_id
   region  = var.region
-  zone = var.zone
+  zone    = var.zone
   // credentials = file(var.credentials)  # Use this if you do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
 }
+
+resource "random_id" "id" {
+  byte_length = 4
+  prefix      = "${var.project_id}-"
+}
+resource "google_project" "service-calls" {
+  name       = var.project_name
+  project_id = var.project_id
+}
+
 
 resource "google_storage_bucket" "data-lake" {
   name                        = var.data_lake_bucket
   location                    = var.region
   force_destroy               = true
-  storage_class               = var.storage_class
+  storage_class               = "STANDARD"
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
   versioning {
@@ -27,9 +38,9 @@ resource "google_storage_bucket" "data-lake" {
   }
 }
 resource "google_bigquery_dataset" "dataset" {
-    dataset_id = var.bq_dataset
-    description = "Contains all tables for the 311 service call project"
-    location = var.region
+  dataset_id  = var.bq_dataset
+  description = "Contains all tables for the 311 service call project"
+  location    = var.region
 }
 
 
@@ -62,49 +73,49 @@ resource "google_service_account" "prefect-agent" {
 
 # assign the bucket role to our service account
 resource "google_storage_bucket_iam_member" "prefect-agent-iam" {
-    bucket = google_storage_bucket.data-lake.name
-    role = "roles/storage.admin"
-    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+  bucket = google_storage_bucket.data-lake.name
+  role   = "roles/storage.admin"
+  member = "serviceAccount:${google_service_account.prefect-agent.email}"
 }
 
 resource "google_bigquery_dataset_iam_member" "prefect-agent-iam" {
-    dataset_id = google_bigquery_dataset.dataset.dataset_id
-    role = "roles/bigquery.admin"
-    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+  dataset_id = google_bigquery_dataset.dataset.dataset_id
+  role       = "roles/bigquery.admin"
+  member     = "serviceAccount:${google_service_account.prefect-agent.email}"
 }
 
 # still requires bigquery.jobUser at project level
 resource "google_project_iam_member" "prefect-agent-iam" {
-    project = var.project
-    role = "roles/bigquery.jobUser"
-    member = "serviceAccount:${google_service_account.prefect-agent.email}"
+  project = var.project
+  role    = "roles/bigquery.jobUser"
+  member  = "serviceAccount:${google_service_account.prefect-agent.email}"
 }
 
 data "google_compute_image" "default" {
-    family  = "ubuntu-2004-lts"
-    project = "ubuntu-os-cloud"
+  family  = "ubuntu-2004-lts"
+  project = "ubuntu-os-cloud"
 }
 resource "google_compute_instance" "default" {
-    name         = "test"
-    machine_type = "e2-medium"
-    boot_disk {
-        initialize_params {
-            size = 10
-            type = "pd-standard"
-            image = data.google_compute_image.default.self_link
-        }
+  name         = "test"
+  machine_type = "e2-medium"
+  boot_disk {
+    initialize_params {
+      size  = 10
+      type  = "pd-standard"
+      image = data.google_compute_image.default.self_link
+    }
+
+  }
+  network_interface {
+    network = "default"
+    access_config {
 
     }
-    network_interface {
-        network = "default"
-        access_config {
-
-        }
-    }
-    service_account {
-        email = google_service_account.prefect-agent.email
-        scopes = ["cloud-platform"]
-    }
+  }
+  service_account {
+    email  = google_service_account.prefect-agent.email
+    scopes = ["cloud-platform"]
+  }
 }
 # resource "google_storage_bucket" "dp-staging" {
 #     name = var.dp_staging

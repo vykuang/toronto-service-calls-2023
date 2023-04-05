@@ -1,40 +1,43 @@
-variable "project" {
-  description = "GCP project ID"
-  default     = "de-zoom-83"
-}
-
-variable "region" {
-  description = "Region for GCP resources. Choose as per your location: https://cloud.google.com/about/locations"
-  default     = "us-west1"
+variable "project_id" {
   type        = string
+  default     = "service-calls-toronto-pipeline"
+  description = "GCP project ID"
+}
+variable "project_name" {
+  type        = string
+  default     = "Service Calls Toronto Pipeline"
+  description = "GCP project display name"
+}
+variable "region" {
+  type        = string
+  default     = "us-west1"
+  description = "Region for GCP resources. Choose as per your location: https://cloud.google.com/about/locations"
 }
 variable "zone" {
-    default = "us-west1-b"
-    type = string
-}
-
-variable "storage_class" {
-  description = "Storage class type for your bucket. Check official docs for more info."
-  default     = "STANDARD"
+  type    = string
+  default = "us-west1-b"
 }
 
 variable "data_lake_bucket" {
-  description = "bucket name to store service call data"
+  type        = string
   default     = "service-calls-data-lake"
+  description = "bucket name to store service call data"
 }
 variable "bq_dataset" {
-  description = "BigQuery Dataset that raw data (from GCS) will be written to"
   type        = string
   default     = "test_service_calls_models"
+  description = "BigQuery Dataset that raw data (from GCS) will be written to"
 }
 
 variable "service_account_id" {
-  description = "service account ID"
+  type        = string
   default     = "prefect-agent"
+  description = "service account ID"
 }
 variable "service_account_name" {
-  description = "service account friendly display name"
+  type        = string
   default     = "prefect agent"
+  description = "service account friendly display name"
 }
 # not req'd if we're defining the specific permissions
 # variable "prefect_roles" {
@@ -46,8 +49,7 @@ variable "service_account_name" {
 #     ]
 # }
 variable "agent_permissions" {
-  description = "list of permissions for the custom agent role"
-  type        = set(string)
+  type = set(string)
   default = [
     "bigquery.tables.create",
     "bigquery.tables.updateData",
@@ -57,6 +59,7 @@ variable "agent_permissions" {
     "storage.objects.get",
     "storage.objects.list",
   ]
+  description = "list of permissions for the custom agent role"
 }
 # variable "tf_state_bucket" {
 #     description = "bucket name to store terraform state files"

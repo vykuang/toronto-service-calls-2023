@@ -2,7 +2,7 @@
 # coding: utf-8
 
 from pathlib import Path
-from google.cloud import storage
+from google.cloud import storage, bigquery
 import requests
 from shutil import unpack_archive
 import pandas as pd
@@ -200,17 +200,75 @@ def upload_gcs(bucket_name: str, src_file: Path, dst_file: str):
     logger.info(f"{src_file} uploaded to {dst_file}")
 
 
+@task(tags=["load"])
+def load_bigquery(src_uris: str, dest_table: str, location: str = "us-west1"):
+    """
+    Loads file from URIs to bigquery table
+    Parameters
+    ----------
+    src_uris: str
+        URIs of data files to be loaded; in format gs://<bucket_name>/<object_name_or_glob>.
+    dest_table: str
+        Table into which data is to be loaded
+
+    Returns
+    -------
+    LoadJob class object
+    """
+    logger = get_run_logger()
+    client = bigquery.Client(
+        location=location,
+        # project=project_id # infer from env
+        # credentials=creds # not needed if instance is already credentialled
+    )
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.PARQUET,
+        time_partitioning=bigquery.TimePartitioning(
+            type_=bigquery.TimePartitioningType.DAY, field="creation_datetime"
+        ),
+        clustering_fields=["service_request_type", "ward_id"],
+    )
+    load_job = client.load_table_from_uri(
+        src_uris,
+        dest_table,
+        job_config=job_config,
+        project=GCP_PROJECT_ID,
+    )
+    logger.info(f"Job creation time: {load_job.created}")
+    load_job.add_done_callback(
+        lambda x: logger.info(
+            f"Job duration: {load_job.ended - load_job.started}\nState: {load_job.state}"
+        )
+    )
+    load_job.result(timeout=3.0)
+    return load_job
+
+
 @flow()
 def extract_service_calls(
     bucket_name: str,
     year: str = "2020",
-    # csv_dir: str = "../data/notebooks",
-    # pq_dir: str = "../data/notebooks",
     overwrite: bool = False,
     test: bool = False,
 ):
     """
     Downloads the zipped csv from opendata API and stores as parquet in gcs
+
+    Parameters
+    ----------
+    bucket_name: str
+        name of bucket in GCS
+    year: str
+        year for which to extract the service call request records
+    overwrite: bool
+        if true, overwrite existing parquet/dataset
+    test: bool
+        if true, load only a small subset onto bigquery
+
+    Returns
+    -------
+    gs_pq_path: str
+        GS URI of the uploaded parquet
     """
     logger = get_run_logger()
     zip_uri = get_zip_uri(year)
@@ -218,6 +276,7 @@ def extract_service_calls(
     # gsc paths
     csv_path = f'raw/csv/{fname.replace("zip", "csv")}'
     pq_path = f'raw/pq/{fname.replace("zip", "parquet")}'
+    gs_pq_path = f"gs://{bucket_name}/{pq_path}"
     csv_exists = blob_exists(csv_path, bucket_name)
     pq_exists = blob_exists(pq_path, bucket_name)
     # save csv to temp dir for conversion to pq and upload
@@ -236,11 +295,66 @@ def extract_service_calls(
                 logger.info(f"{tmpcsv_path} will be read instead")
 
             logger.info(f"Converting to {pq_path}")
-            convert_to_parquet(
-                csv_path=tmpcsv_path, pq_path=f"gs://{bucket_name}/{pq_path}", test=test
-            )
+            convert_to_parquet(csv_path=tmpcsv_path, pq_path=gs_pq_path, test=test)
         else:
             logger.warning(f"{pq_path} already exists")
+
+    return gs_pq_path
+
+
+@flow
+def load(src_uris: str, dest_table: str):
+    """
+    Loads parquets from GCS to bigquery
+
+    Parameters
+    ----------
+    src_uris: str
+        URIs of data files to be loaded; in format gs://<bucket_name>/<object_name_or_glob>.
+    dest_table: str
+        Table into which data is to be loaded. <project_id>.<dataset_id>.<table_name>
+
+    Returns
+    -------
+    None
+    """
+    logger = get_run_logger()
+    logger.info(f"loading from {src_uris} into {dest_table}")
+    load_job = load_bigquery(src_uris, dest_table)
+    return load_job
+
+
+@flow
+def service_call_extract_load(
+    bucket_name: str,
+    dest_table: str,
+    year: str = "2020",
+    overwrite: bool = False,
+    test: bool = False,
+):
+    """ "
+    Extracts CSV as parquets and loads into bigquery dataset
+
+    Parameters
+    ----------
+    bucket_name: str
+        name of bucket in GCS
+    year: str
+        year for which to extract the service call request records
+    overwrite: bool
+        if true, overwrite existing parquet/dataset
+    test: bool
+        if true, load only a small subset onto bigquery
+
+    """
+    gs_pq_path = extract_service_calls(
+        bucket_name=bucket_name,
+        year=year,
+    )
+    load_job = load(
+        src_uris=gs_pq_path,
+        dest_table="",
+    )
 
 
 if __name__ == "__main__":

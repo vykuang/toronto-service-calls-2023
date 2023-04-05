@@ -52,7 +52,41 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 ## Run it yourself!
 
+### Env vars
+
+#### Terraform
+
+- project ID
+- bucket name
+- dataset name
+
+How to forward them to python script prefect flow?
+
+Once a variable is defined, terraform can accept environment variables by searching for `TF_VAR_<VAR_NAME>`. E.g. if we have `var.project_id`, we can export `TF_VARS_project_id=my-first-project` and `terraform plan` will be able to search for it.
+
+With a key/value pair list in `.env`, export all of them in a script:
+
+```bash
+set -o allexport
+source .env
+set +o allexport
+```
+
+Load them in python via `dotenv`
+
 ### Setup
+
+#### GCP
+
+Ensure the current GCP account (not service account) has the permission to
+
+- create projects (service accounts cannot do this without parent resource, e.g. folder/organization, and if account is free-trial, then that would not be possible)
+- create service accounts
+- allocate roles to princpals
+- create buckets on GCS
+- create datasets on BQ
+
+The basic role of `owner` will suffice
 
 #### Terraform
 
@@ -74,6 +108,7 @@ terraform init \
 -backend-config="bucket=$TFSTATE_BUCKET" \
 -backend-config="prefix=terraform/state"
 ```
+
 
 ## data resources
 
