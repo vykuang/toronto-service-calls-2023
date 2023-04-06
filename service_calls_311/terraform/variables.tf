@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  default     = "service-calls-toronto-pipeline"
+  default     = "service-calls-pipeline-382901"
   description = "GCP project ID"
 }
 variable "project_name" {
@@ -25,18 +25,18 @@ variable "data_lake_bucket" {
 }
 variable "bq_dataset" {
   type        = string
-  default     = "test_service_calls_models"
+  default     = "service_calls_models"
   description = "BigQuery Dataset that raw data (from GCS) will be written to"
 }
 
 variable "service_account_id" {
   type        = string
-  default     = "prefect-agent"
+  default     = "service-agent"
   description = "service account ID"
 }
 variable "service_account_name" {
   type        = string
-  default     = "prefect agent"
+  default     = "service agent"
   description = "service account friendly display name"
 }
 # not req'd if we're defining the specific permissions

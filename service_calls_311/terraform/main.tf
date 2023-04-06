@@ -16,15 +16,7 @@ provider "google" {
   // credentials = file(var.credentials)  # Use this if you do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
 }
 
-resource "random_id" "id" {
-  byte_length = 4
-  prefix      = "${var.project_id}-"
-}
-resource "google_project" "service-calls" {
-  name       = var.project_name
-  project_id = var.project_id
-}
-
+### REMOVED google_project; create manually via CLI or console
 
 resource "google_storage_bucket" "data-lake" {
   name                        = var.data_lake_bucket
@@ -45,14 +37,14 @@ resource "google_bigquery_dataset" "dataset" {
 
 
 # define the blank canvas service account
-resource "google_service_account" "prefect-agent" {
+resource "google_service_account" "service-agent" {
   account_id   = var.service_account_id
   display_name = var.service_account_name
-  description  = "Service account supplying permissions for prefect agent"
-  project      = var.project
+  description  = "Service account supplying permissions for executor agent"
+  project      = var.project_id
 }
 
-# resource "google_project_iam_custom_role" "custom-prefect-role" {
+# resource "google_project_iam_custom_role" "custom-service-role" {
 #   role_id = "customPrefectAgent"
 #   title   = "Custom Prefect Agent"
 #   # agent_permissions defined in variables.tf as set of strings
@@ -61,62 +53,64 @@ resource "google_service_account" "prefect-agent" {
 # }
 
 # # assign the role to the service account
-# resource "google_project_iam_member" "prefect-agent-iam" {
+# resource "google_project_iam_member" "service-agent-iam" {
 #   project = var.project
 #   # assigning predefined roles
 #   # for_each = var.prefect_roles
 #   # role = each.key
 #   # assigning the custom role
 #   role   = google_project_iam_custom_role.custom-prefect-role.id
-#   member = "serviceAccount:${google_service_account.prefect-agent.email}"
+#   member = "serviceAccount:${google_service_account.service-agent.email}"
 # }
-
+locals {
+    sa_member = "serviceAccount:${google_service_account.service-agent.email}"
+}
 # assign the bucket role to our service account
-resource "google_storage_bucket_iam_member" "prefect-agent-iam" {
+resource "google_storage_bucket_iam_member" "service-agent-iam" {
   bucket = google_storage_bucket.data-lake.name
   role   = "roles/storage.admin"
-  member = "serviceAccount:${google_service_account.prefect-agent.email}"
+  member = local.sa_member
 }
-
-resource "google_bigquery_dataset_iam_member" "prefect-agent-iam" {
+# dataset admin
+resource "google_bigquery_dataset_iam_member" "service-agent-iam" {
   dataset_id = google_bigquery_dataset.dataset.dataset_id
   role       = "roles/bigquery.admin"
-  member     = "serviceAccount:${google_service_account.prefect-agent.email}"
+  member     = local.sa_member
 }
 
 # still requires bigquery.jobUser at project level
-resource "google_project_iam_member" "prefect-agent-iam" {
-  project = var.project
+resource "google_project_iam_member" "service-agent-iam" {
+  project = var.project_id
   role    = "roles/bigquery.jobUser"
-  member  = "serviceAccount:${google_service_account.prefect-agent.email}"
+  member  = local.sa_member
 }
 
 data "google_compute_image" "default" {
   family  = "ubuntu-2004-lts"
   project = "ubuntu-os-cloud"
 }
-resource "google_compute_instance" "default" {
-  name         = "test"
-  machine_type = "e2-medium"
-  boot_disk {
-    initialize_params {
-      size  = 10
-      type  = "pd-standard"
-      image = data.google_compute_image.default.self_link
-    }
-
-  }
-  network_interface {
-    network = "default"
-    access_config {
-
-    }
-  }
-  service_account {
-    email  = google_service_account.prefect-agent.email
-    scopes = ["cloud-platform"]
-  }
-}
+# resource "google_compute_instance" "default" {
+#   name         = "test"
+   #machine_type = "e2-medium"
+   #boot_disk {
+     #initialize_params {
+       #size  = 10
+       #type  = "pd-standard"
+       #image = data.google_compute_image.default.self_link
+     #}
+ #
+   #}
+   #network_interface {
+     #network = "default"
+     #access_config {
+ #
+     #}
+   #}
+   #service_account {
+     #email  = google_service_account.service-agent.email
+     #scopes = ["cloud-platform"]
+   #}
+ #}
 # resource "google_storage_bucket" "dp-staging" {
 #     name = var.dp_staging
 #     location = var.region

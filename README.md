@@ -64,6 +64,8 @@ How to forward them to python script prefect flow?
 
 Once a variable is defined, terraform can accept environment variables by searching for `TF_VAR_<VAR_NAME>`. E.g. if we have `var.project_id`, we can export `TF_VARS_project_id=my-first-project` and `terraform plan` will be able to search for it.
 
+Load them in python via `dotenv`
+
 With a key/value pair list in `.env`, export all of them in a script:
 
 ```bash
@@ -72,43 +74,49 @@ source .env
 set +o allexport
 ```
 
-Load them in python via `dotenv`
+Set these vars for the commands below:
+
+```bash
+TF_VAR_project_id=
+TF_VAR_region=
+TF_VAR_zone=
+TFSTATE_BUCKET=tf-state-service
+```
 
 ### Setup
 
 #### GCP
 
-Ensure the current GCP account (not service account) has the permission to
+Create project:
 
-- create projects (service accounts cannot do this without parent resource, e.g. folder/organization, and if account is free-trial, then that would not be possible)
-- create service accounts
-- allocate roles to princpals
-- create buckets on GCS
-- create datasets on BQ
+- via console, or
+- via `gcloud projects create <PROJECT_ID>`
 
-The basic role of `owner` will suffice
+The `PROJECT_ID` can be anything, but the default as specified in `variables.tf` is `service-calls-pipeline`; if you choose different, make sure they match.
+
+To use any resource, the new project must be linked to a billing account. In console nav menu, go to Billing > Link to billing account. Default should be called `My Billing Account` if on free trial
 
 #### Terraform
 
-Create bucket for terraform backend and initialize
+Create bucket for terraform backend and initialize. Ensure the current user account has admin level status on the created project
 
 ```bash
-# set name
-TFSTATE_BUCKET=your-bucket-name
 # cd to terraform dir
 cd terraform/
 # make bucket
 gsutil mb \
--l us-west1 \
+-l $TF_VAR_region \
+-p $TF_VAR_project_id \
 -b on \
 --pap enforced \
 gs://$TFSTATE_BUCKET
+# turn on versioning
+gsutil versioning set on gs://$TF_VAR_data_lake_bucket
 # may have to add -migrate-state option if there is existing tfstate
 terraform init \
 -backend-config="bucket=$TFSTATE_BUCKET" \
 -backend-config="prefix=terraform/state"
 ```
-
 
 ## data resources
 
