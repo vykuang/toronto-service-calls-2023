@@ -9,6 +9,15 @@ import pandas as pd
 from tempfile import TemporaryDirectory
 import argparse
 from prefect import flow, task, get_run_logger
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+LOCATION = os.getenv("TF_VAR_region", default="us-west1")
+BUCKET = os.getenv("TF_VAR_data_lake_bucket", default="service-data-lake")
+DATASET = os.getenv("TF_VAR_bq_dataset", default="service_calls_models")
+
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
 # https://docs.ckan.org/en/latest/api/
@@ -201,7 +210,7 @@ def upload_gcs(bucket_name: str, src_file: Path, dst_file: str):
 
 
 @task(tags=["load"])
-def load_bigquery(src_uris: str, dest_table: str, location: str = "us-west1"):
+def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
     """
     Loads file from URIs to bigquery table
     Parameters
@@ -303,7 +312,7 @@ def extract_service_calls(
 
 
 @flow
-def load(src_uris: str, dest_table: str):
+def load(src_uris: str, dataset_name: str, year: str):
     """
     Loads parquets from GCS to bigquery
 
@@ -311,23 +320,28 @@ def load(src_uris: str, dest_table: str):
     ----------
     src_uris: str
         URIs of data files to be loaded; in format gs://<bucket_name>/<object_name_or_glob>.
-    dest_table: str
-        Table into which data is to be loaded. <project_id>.<dataset_id>.<table_name>
+    dataset: str
+        Bigquery dataset into which data will be loaded. <project_id>.<dataset_id>
+        project_id is optional, since it can be taken from environment context by
+        bigquery's client library
+    year: str
+        year which the parquet file belongs to; used to construct table name
 
     Returns
     -------
     None
     """
     logger = get_run_logger()
+    dest_table = f"{dataset_name}.facts_{year}_partitioned"
     logger.info(f"loading from {src_uris} into {dest_table}")
     load_job = load_bigquery(src_uris, dest_table)
     return load_job
 
 
 @flow
-def service_call_extract_load(
+def extract_load_service_calls(
     bucket_name: str,
-    dest_table: str,
+    dataset_name: str,
     year: str = "2020",
     overwrite: bool = False,
     test: bool = False,
@@ -339,6 +353,8 @@ def service_call_extract_load(
     ----------
     bucket_name: str
         name of bucket in GCS
+    dataset_name: str
+        name of dataset in bigquery
     year: str
         year for which to extract the service call request records
     overwrite: bool
@@ -350,10 +366,12 @@ def service_call_extract_load(
     gs_pq_path = extract_service_calls(
         bucket_name=bucket_name,
         year=year,
+        overwrite=overwrite,
+        test=test,
     )
     load_job = load(
         src_uris=gs_pq_path,
-        dest_table="",
+        dataset_name=dataset_name,
     )
 
 
@@ -368,11 +386,17 @@ if __name__ == "__main__":
         "-b",
         "--bucket_name",
         type=str,
+        default=BUCKET,
         help="GCS bucket to store the CSV and parquet files",
     )
+    opt(
+        "-d",
+        "--dataset_name",
+        type=str,
+        default=DATASET,
+        help="bigquery dataset name in which to load table",
+    )
     opt("-y", "--year", default="2020", type=str)
-    # opt('-c', '--csv_dir', type=str, help='directory to store unzipped csv')
-    # opt('-p', '--pq_dir', type=str, help='directory to store parquet')
     opt(
         "-O",
         "--overwrite",
@@ -388,11 +412,10 @@ if __name__ == "__main__":
         help="If specified, only reads small section of csv",
     )
     args = parser.parse_args()
-    extract_service_calls(
+    extract_load_service_calls(
         bucket_name=args.bucket_name,
         year=args.year,
-        # csv_dir=args.csv_dir,
-        # pq_dir=args.pq_dir,
+        dataset_name=args.dataset_name,
         overwrite=args.overwrite,
         test=args.test,
     )

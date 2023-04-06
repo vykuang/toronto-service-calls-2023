@@ -115,7 +115,8 @@ gsutil versioning set on gs://$TF_VAR_data_lake_bucket
 # may have to add -migrate-state option if there is existing tfstate
 terraform init \
 -backend-config="bucket=$TFSTATE_BUCKET" \
--backend-config="prefix=terraform/state"
+-backend-config="prefix=terraform/state" \
+-migrate-state
 ```
 
 ## data resources
