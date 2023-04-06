@@ -10,22 +10,22 @@ variable "project_name" {
 }
 variable "region" {
   type        = string
-  default     = "us-west1"
+  default     = null
   description = "Region for GCP resources. Choose as per your location: https://cloud.google.com/about/locations"
 }
 variable "zone" {
   type    = string
-  default = "us-west1-b"
+  default = null
 }
 
 variable "data_lake_bucket" {
   type        = string
-  default     = "service-calls-data-lake"
+  default     = null
   description = "bucket name to store service call data"
 }
 variable "bq_dataset" {
   type        = string
-  default     = "service_calls_models"
+  default     = null
   description = "BigQuery Dataset that raw data (from GCS) will be written to"
 }
 
@@ -61,6 +61,17 @@ variable "agent_permissions" {
   ]
   description = "list of permissions for the custom agent role"
 }
+
+variable "gcp_service_list" {
+  type = set(string)
+  default = [
+    "compute.googleapis.com",
+    "storage-component.googleapis.com",
+    "bigquery.googleapis.com"
+  ]
+  description = "APIs to be enabled in GCP project"
+}
+
 # variable "tf_state_bucket" {
 #     description = "bucket name to store terraform state files"
 #     default = "service-call-tf-states"

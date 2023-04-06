@@ -17,7 +17,12 @@ provider "google" {
 }
 
 ### REMOVED google_project; create manually via CLI or console
-
+resource "google_project_service" "services" {
+  for_each                   = var.gcp_service_list
+  project                    = var.project_id
+  service                    = each.key
+  disable_dependent_services = false
+}
 resource "google_storage_bucket" "data-lake" {
   name                        = var.data_lake_bucket
   location                    = var.region
@@ -63,7 +68,7 @@ resource "google_service_account" "service-agent" {
 #   member = "serviceAccount:${google_service_account.service-agent.email}"
 # }
 locals {
-    sa_member = "serviceAccount:${google_service_account.service-agent.email}"
+  sa_member = "serviceAccount:${google_service_account.service-agent.email}"
 }
 # assign the bucket role to our service account
 resource "google_storage_bucket_iam_member" "service-agent-iam" {
@@ -89,28 +94,39 @@ data "google_compute_image" "default" {
   family  = "ubuntu-2004-lts"
   project = "ubuntu-os-cloud"
 }
-# resource "google_compute_instance" "default" {
-#   name         = "test"
-   #machine_type = "e2-medium"
-   #boot_disk {
-     #initialize_params {
-       #size  = 10
-       #type  = "pd-standard"
-       #image = data.google_compute_image.default.self_link
-     #}
- #
-   #}
-   #network_interface {
-     #network = "default"
-     #access_config {
- #
-     #}
-   #}
-   #service_account {
-     #email  = google_service_account.service-agent.email
-     #scopes = ["cloud-platform"]
-   #}
- #}
+
+# Wait for the new configuration to propagate
+# (might be redundant)
+resource "time_sleep" "wait_service_enable" {
+  create_duration = "10s"
+
+  depends_on = [google_project_service.services]
+}
+
+resource "google_compute_instance" "default" {
+  name         = "test"
+  machine_type = "e2-medium"
+  boot_disk {
+    initialize_params {
+      size  = 10
+      type  = "pd-standard"
+      image = data.google_compute_image.default.self_link
+    }
+
+  }
+  network_interface {
+    network = "default"
+    access_config {
+      network_tier = "STANDARD"
+
+    }
+  }
+  service_account {
+    email  = google_service_account.service-agent.email
+    scopes = ["cloud-platform"]
+  }
+  depends_on = [time_sleep.wait_service_enable]
+}
 # resource "google_storage_bucket" "dp-staging" {
 #     name = var.dp_staging
 #     location = var.region

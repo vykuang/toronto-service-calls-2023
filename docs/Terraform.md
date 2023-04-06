@@ -357,6 +357,11 @@ gcloud iam roles create ProjectUpdater \
 
 Alternatively, instead of passing `permissions`, pass `file` and point to path of JSON/YAML specifying the permissions
 
+### `project_service`
+
+Cloud APIs need to be enabled to use resources, e.g. compute engine API is required for TF to allocate a VM instance. Use `google_project_service` resource block to enable APIs
+
+
 ## Modules
 
 Containers for multiple resources used together; consists of a collection of `.tf` or `.tf.json` kept together in a directory. Every terraform config has at least one module, the *root module*, containing `main.tf`
@@ -366,3 +371,37 @@ Modules can also be imported from the terraform registry, made by official provi
 ## Best practice
 
 - `terraform fmt` to autoformat the `.tf` files
+
+## Testing
+
+Create VM and attach our service account to run these commands in the VM
+
+```bash
+# bucket name
+BUCKET=gs://service-data-lake
+# grab test file
+curl -o city-wards.geojson \
+    https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/5e7a8234-f805-43ac-820f-03d7c360b588/resource/737b29e0-8329-4260-b6af-21555ab24f28/download/City%20Wards%20Data.geojson
+
+# upload to bucket
+gsutil cp city-wards.geojson $BUCKET/temp/city-wards.geojson
+# download
+gsutil cp $BUCKET/temp/city-wards.geojson download.geojson
+# convert geojson to format accepted by bq
+sudo snap install jq
+cat city-wards.geojson | jq -c '.features[]' > converted-city-wards.geojson
+# load to bq table
+bq load \
+    --source_format=NEWLINE_DELIMITED_JSON \
+    --json_extension=GEOJSON \
+    --autodetect \
+    service_calls_models.city_wards_map \
+    converted-city-wards.geojson
+```
+
+references
+
+- [bq and geojson](https://cloud.google.com/bigquery/docs/geospatial-data#geojson-files)
+    - original format has a single `FeatureCollection` object containing all geometries
+    - use `jq`, an `sed`-like tool for json, to remove that root-level object and split each individual feature into separate lines
+- [bq cli docs](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference#bq_load)

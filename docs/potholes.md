@@ -45,6 +45,10 @@ Summary of problems along the way
         - create project (could be from `gcloud projects create`)
         - link to billing account (must be on console)
         - record project name in `.env` somehow
+    - [provisioner `local-exec`](https://developer.hashicorp.com/terraform/language/resources/provisioners/local-exec) can run bash commands
+    - [`terraform-google-gcloud`](https://registry.terraform.io/modules/terraform-google-modules/gcloud/google/latest) is a terraform wrapper for gcloud
+    - useful to programmatically enable `service usage` and `cloud resource manager` API, which are pre-requisites to enabling *other* APIs via terraform
+    - those APIs are enabled automatically if a project is created via console
 
 ## Transform
 

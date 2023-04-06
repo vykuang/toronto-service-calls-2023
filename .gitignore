@@ -20,3 +20,4 @@ data/notebooks/
 # terraform artifacts
 .terraform
 .terraform.*
+tfplan
