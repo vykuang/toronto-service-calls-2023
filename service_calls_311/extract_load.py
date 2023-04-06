@@ -14,6 +14,7 @@ import os
 
 load_dotenv()
 
+GCP_PROJECT_ID = os.getenv("TF_VAR_project_id", default=None)
 LOCATION = os.getenv("TF_VAR_region", default="us-west1")
 BUCKET = os.getenv("TF_VAR_data_lake_bucket", default="service-data-lake")
 DATASET = os.getenv("TF_VAR_bq_dataset", default="service_calls_models")
@@ -46,10 +47,12 @@ def get_package_metadata(
 @task(tags=["extract", "API"])
 def get_zip_uri(year: str = "2020") -> str:
     """Retrieve URL of 311 service call data given the year"""
+    logger = get_run_logger()
     resource_metadata = get_package_metadata()["result"]["resources"]
     url = [
         resource["url"] for resource in resource_metadata if year in resource["name"]
     ][0]
+    logger.info(f"Retrieving from {url}")
     return url
 
 
@@ -74,7 +77,8 @@ def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path | None:
     --------
     tmpcsv_path: Path | None
         Temporary path to local csv to be uploaded
-    """
+    """    
+    logger = get_run_logger()
     zipname = zip_uri.split("/")[-1]
     with requests.get(zip_uri, stream=True, timeout=4) as tmpzip:
         tmpzip.raise_for_status()
@@ -91,6 +95,7 @@ def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path | None:
         tmpcsv_path = tmp_glob[0]
     else:
         tmpcsv_path = None
+    logger.info(f"Saved CSV to {tmpcsv_path}")
     return tmpcsv_path
 
 
@@ -250,6 +255,7 @@ def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
         )
     )
     load_job.result(timeout=3.0)
+    logger.info(f'Load Job status: {load_job.state}')
     return load_job
 
 
@@ -307,7 +313,7 @@ def extract_service_calls(
             convert_to_parquet(csv_path=tmpcsv_path, pq_path=gs_pq_path, test=test)
         else:
             logger.warning(f"{pq_path} already exists")
-
+    logger.info(f"Uploaded parquet to {gs_pq_path}")
     return gs_pq_path
 
 
@@ -342,7 +348,7 @@ def load(src_uris: str, dataset_name: str, year: str):
 def extract_load_service_calls(
     bucket_name: str,
     dataset_name: str,
-    year: str = "2020",
+    year: str,
     overwrite: bool = False,
     test: bool = False,
 ):
@@ -363,6 +369,14 @@ def extract_load_service_calls(
         if true, load only a small subset onto bigquery
 
     """
+    logger = get_run_logger()
+    logger.info(f"bucket: {bucket_name}\ndataset: {dataset_name}\nyear: {year}")
+    # validate
+    for name in [bucket_name, dataset_name]:
+        if not all([name[0].isalnum(), name[-1].isalnum()]):
+            raise ValueError(f"Invalid bucket or dataset name: {name}")
+    if int(year) < 2015 or int(year) > 2023:
+        raise ValueError(f"Invalid year: {year}")
     gs_pq_path = extract_service_calls(
         bucket_name=bucket_name,
         year=year,
@@ -372,6 +386,7 @@ def extract_load_service_calls(
     load_job = load(
         src_uris=gs_pq_path,
         dataset_name=dataset_name,
+        year=year
     )
 
 
@@ -414,8 +429,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     extract_load_service_calls(
         bucket_name=args.bucket_name,
-        year=args.year,
         dataset_name=args.dataset_name,
+        year=args.year,
         overwrite=args.overwrite,
         test=args.test,
     )

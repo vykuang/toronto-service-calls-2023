@@ -10,6 +10,9 @@ Summary of problems along the way
     - add `on_bad_lines='skip'` in `pd.read_csv`
 - FileNotFound: Zip in lower case, but csv in upper case
     - more robust method to look for csv - glob `*.csv` instead
+- `IndexError: string index out of range` when instantiating bucket: env var not passed, or not set correctly
+    - add validation check for bucket and dataset name
+    - must `export TF_VAR_...=` prior to running script
 
 ## Terraform
 
@@ -53,3 +56,8 @@ Summary of problems along the way
 ## Transform
 
 - parquet files loaded from GCS do not need schema specification, even though docs may suggest otherwise
+
+## Prefect
+
+- cannot create flow run. failed to reach API at...
+    - `prefect cloud login` with API key from cloud UI
