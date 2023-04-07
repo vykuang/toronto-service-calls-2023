@@ -77,7 +77,7 @@ def extract(zip_uri: str, tmp_dir: Path, chunk_size=10000) -> Path | None:
     --------
     tmpcsv_path: Path | None
         Temporary path to local csv to be uploaded
-    """    
+    """
     logger = get_run_logger()
     zipname = zip_uri.split("/")[-1]
     with requests.get(zip_uri, stream=True, timeout=4) as tmpzip:
@@ -254,8 +254,8 @@ def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
             f"Job duration: {load_job.ended - load_job.started}\nState: {load_job.state}"
         )
     )
-    load_job.result(timeout=3.0)
-    logger.info(f'Load Job status: {load_job.state}')
+    load_job.result(timeout=20.0)
+    logger.info(f"Load Job status: {load_job.state}")
     return load_job
 
 
@@ -383,11 +383,7 @@ def extract_load_service_calls(
         overwrite=overwrite,
         test=test,
     )
-    load_job = load(
-        src_uris=gs_pq_path,
-        dataset_name=dataset_name,
-        year=year
-    )
+    load_job = load(src_uris=gs_pq_path, dataset_name=dataset_name, year=year)
 
 
 if __name__ == "__main__":
