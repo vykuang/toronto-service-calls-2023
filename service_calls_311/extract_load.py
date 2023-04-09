@@ -9,10 +9,11 @@ import pandas as pd
 from tempfile import TemporaryDirectory
 import argparse
 from prefect import flow, task, get_run_logger
-from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# load_dotenv()
 
 GCP_PROJECT_ID = os.getenv("TF_VAR_project_id", default=None)
 LOCATION = os.getenv("TF_VAR_region", default="us-west1")
@@ -230,9 +231,10 @@ def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
     LoadJob class object
     """
     logger = get_run_logger()
+    logger.info(f"{GCP_PROJECT_ID}: GCP project ID")
     client = bigquery.Client(
         location=location,
-        # project=project_id # infer from env
+        project=GCP_PROJECT_ID,  # infer from env
         # credentials=creds # not needed if instance is already credentialled
     )
     job_config = bigquery.LoadJobConfig(

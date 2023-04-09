@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # coding: utf-8
-ADC=~/.config/gcloud/application_default_credentials.json
+ADC=$HOME/.config/gcloud/application_default_credentials.json
 docker run \
     -it \
+    --env-file .env \
     -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys.json \
-    -v ${ADC}:/tmp/keys.json:ro \
-    --mount type=bind,source="${PWD}",target=/service \
-    --entrypoint=bash \
+    --mount type=bind,src=${ADC},dst=/tmp/keys.json,readonly \
+    --mount type=bind,src=${PWD},dst=/service \
+    --entrypoint ./el.sh \
     vykuang/service-calls:base
+    # --entrypoint=bash \
+        # poetry shell
+    # --mount type=bind,source="${PWD}",target=/service \

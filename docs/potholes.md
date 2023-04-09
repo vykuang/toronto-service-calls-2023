@@ -13,6 +13,7 @@ Summary of problems along the way
 - `IndexError: string index out of range` when instantiating bucket: env var not passed, or not set correctly
     - add validation check for bucket and dataset name
     - must `export TF_VAR_...=` prior to running script
+- `load_dotenv` will not substitute environment variables when importing `.env` file, i.e. cannot set `VAR2=${VAR1}`; `VAR2` will be set literally
 
 ## Terraform
 

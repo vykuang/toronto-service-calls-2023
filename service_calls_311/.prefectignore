@@ -46,3 +46,8 @@ terraform/
 
 # scripts
 *.sh
+dockerfile
+
+# poetry
+*.lock
+*.toml

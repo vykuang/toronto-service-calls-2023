@@ -20,6 +20,8 @@ Alternatively, mount the entire `~/.config/gcloud` folder directly to the contai
 
 Ideally we don't pass any credentials and [configure specific IAM roles](https://cloud.google.com/run/docs/authenticating/service-to-service) handle authentication. Concretely speaking, if we're deploying this container to cloud, whatever's running the container should have a service account attached to it that already has the necessary permissions
 
+Specifically, if our agent is running on GCE, we would run `prefect agent start ...` on the instance, and the service account attached will have all the required permissions, bypassing need for including credentials
+
 ### Execution
 
 There's two ways:
@@ -40,3 +42,15 @@ Let's try it locally by mounting the flow code
 - needed `poetry run` in order to access the poetry env
 - supply `GOOGLE_CLOUD_PROJECT=${TF_VAR_project_id}` in list of env vars
 - supply `PREFECT_API_KEY` and `PREFECT_API_URL`? I think it needs to access the google secret for the key.
+
+[According to prefect docs](https://docs.prefect.io/latest/concepts/infrastructure/#building-your-own-image) the last command being run is `RUN pip install`. To provide our custom image in a execution ready state, add `ENTRYPOINT [ "poetry", "shell" ] to activate the venv that includes our dependencies
+
+- unable to detect the current shell???
+- try activating manually with `source $(poetry env info --path)/bin/activate`
+    - [docs here](https://python-poetry.org/docs/basic-usage/#activating-the-virtual-environment)
+- in order for `ENTRYPOINT` to expand variable substitution, must add `/bin/bash -c` in front:
+    `ENTRYPOINT ["/bin/bash", "-c", "source $(poetry env info --path)/bin/activate"]`
+- and for some reason `FILE NAME` and `source` must be in same double quotes
+- I think it's because that whole thing is the arg for `bash`
+
+How to debug without overriding entrypoint...

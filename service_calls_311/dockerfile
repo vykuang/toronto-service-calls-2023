@@ -24,6 +24,7 @@ COPY --from=builder ${POETRY_VENV} ${POETRY_VENV}
 # allows poetry to be recognized in shell
 ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
+# ARG APPDIR=/service
 WORKDIR /service
 
 COPY poetry.lock pyproject.toml /service/
@@ -32,4 +33,11 @@ COPY poetry.lock pyproject.toml /service/
 RUN poetry check
 
 # install dependencies
-RUN poetry install --no-interaction --no-cache --without dev
+RUN poetry install --no-root --no-interaction --no-cache --without dev
+
+# start in poetry env
+ENTRYPOINT ["/bin/bash", "-c", "source $(poetry env info --path)/bin/activate"]
+# ENTRYPOINT [ "el.sh" ]
+# ENTRYPOINT [ "poetry", "run" ]
+# CMD ["python"]
+# CMD ["&&", "python", "-c", "import pandas as pd; print(pd.__version__)" ]
