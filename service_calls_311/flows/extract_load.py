@@ -16,9 +16,9 @@ import os
 # load_dotenv()
 
 GCP_PROJECT_ID = os.getenv("TF_VAR_project_id", default=None)
-LOCATION = os.getenv("TF_VAR_region", default="us-west1")
-BUCKET = os.getenv("TF_VAR_data_lake_bucket", default="service-data-lake")
-DATASET = os.getenv("TF_VAR_bq_dataset", default="service_calls_models")
+LOCATION = os.getenv("TF_VAR_region", default=None)
+BUCKET = os.getenv("TF_VAR_data_lake_bucket", default=None)
+DATASET = os.getenv("TF_VAR_bq_dataset", default=None)
 
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
@@ -174,7 +174,8 @@ def blob_exists(blob_path: str, bucket_name: str) -> bool:
     Does this blob exist?
     """
     logger = get_run_logger()
-    gcs = storage.Client()
+    logger.info(f"{GCP_PROJECT_ID}: GCP project ID")
+    gcs = storage.Client(project=GCP_PROJECT_ID)
     bucket = gcs.bucket(bucket_name=bucket_name)
     exists = storage.Blob(bucket=bucket, name=blob_path).exists(client=gcs)
     logger.info(f"{blob_path} already exists: {exists}")

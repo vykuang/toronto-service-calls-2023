@@ -62,3 +62,22 @@ Summary of problems along the way
 
 - cannot create flow run. failed to reach API at...
     - `prefect cloud login` with API key from cloud UI
+- agent needs to have docker installed, *regardless of what image I'm using*, obviously.
+- storage block woes
+    - The relative directory between `deploy.sh` (i.e. where you run `prefect deployment build`), `flow.py`, and `--storage-block` arg is **very delicate**
+    - The most likely case: `deploy.sh` and `flow.py` are in the same folder. `--storage-block` *cannot have any subpath*. This directly affects how flow retrieval works.
+    - Case 2: `deploy.sh` one level above `flow.py`, which is inside `proj-a`. `--storage-block` *must be set to `proj-a`*.
+        - `... build proj-a/flow.py:flow_func`
+        - everything in same dir as `deploy.sh` is uploaded, taking into account `.prefectignore`
+        - the relative dir specified in `build` is then relative to the `--path` arg, if passed
+        - cannot `build ./flow.py:flow_func` and then pass `--path=prefect-flow`; agent will then try to retrieve the flow code from a folder named `prefect-flow`, which doesn't exist
+        - the maddening thing is that upload will go smoothly, creating the `--path` subdir in GCS; problem only occurs during retrieval
+    - [see section on subpath](https://medium.com/the-prefect-blog/prefect-2-3-0-adds-support-for-flows-defined-in-docker-images-and-github-repositories-79a8797a7371#e748)
+- passing credentials to this docker container from our GCE instance
+    - mount `$HOME/.config/gcloud/application_default_credentials.json:/gcp/creds.json`
+        - need to use absolute dir when mounting, unless we're in CLI and we're using `docker run`
+    - set `--env GOOGLE_APPLICATION_CREDENTIALS=/gcp/creds.json`
+    - needs `GOOGLE_CLOUD_PROJECT` during `blob-exists`
+        - not getting it from `TF_VAR_project_id`?
+        - never mind, storage client needs `project=` to be explicitly assigned
+    - mounting ADC worked locally, but not on instance: `/gcp/creds.json is a directory`???

@@ -18,7 +18,7 @@ description: |-
       if true, overwrite existing parquet/dataset
   test: bool
       if true, load only a small subset onto bigquery
-version: cb8da65b9b1a7a4cad5759b8253a4c67
+version: 95b9756864d05c1fe384f38203aed3de
 # The work queue that will handle this deployment's runs
 work_queue_name: service-calls
 work_pool_name: default-agent-pool
@@ -26,7 +26,8 @@ tags: []
 parameters:
   bucket_name: service-data-lake
   dataset_name: service_calls_models
-  year: '2023'
+  year: '2022'
+  test: 'True'
 schedule: null
 is_schedule_active: true
 infra_overrides: {}
@@ -43,17 +44,18 @@ infrastructure:
     TF_VAR_bq_dataset: service_calls_models
     TF_VAR_project_id: service-calls-pipeline-382901
     TF_VAR_data_lake_bucket: service-data-lake
+    GOOGLE_APPLICATION_CREDENTIALS: /gcp/creds.json
   labels: {}
   name: service-call-infra
-  command:
-  - poetry run
-  image: vykuang/service-calls:base
-  image_pull_policy: IF_NOT_PRESENT
+  command: null
+  image: vykuang/service-calls:base-pip-v2
+  image_pull_policy: ALWAYS
   image_registry: null
   networks: []
   network_mode: null
-  auto_remove: true
-  volumes: []
+  auto_remove: false
+  volumes:
+  - /home/klang/.config/gcloud/application_default_credentials.json:/gcp/creds.json
   stream_output: true
   memswap_limit: null
   mem_limit: null
@@ -72,8 +74,8 @@ storage:
   _is_anonymous: false
   block_type_slug: gcs
   _block_type_slug: gcs
-path: prefect
-entrypoint: extract_load.py:extract_load_service_calls
+path: ''
+entrypoint: flows/extract_load.py:extract_load_service_calls
 parameter_openapi_schema:
   title: Parameters
   type: object
@@ -105,4 +107,4 @@ parameter_openapi_schema:
   - dataset_name
   - year
   definitions: null
-timestamp: '2023-04-09T17:20:33.060251+00:00'
+timestamp: '2023-04-10T16:11:05.995404+00:00'
