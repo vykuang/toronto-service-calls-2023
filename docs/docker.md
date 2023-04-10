@@ -52,5 +52,7 @@ Let's try it locally by mounting the flow code
     `ENTRYPOINT ["/bin/bash", "-c", "source $(poetry env info --path)/bin/activate"]`
 - and for some reason `FILE NAME` and `source` must be in same double quotes
 - I think it's because that whole thing is the arg for `bash`
+- Do not copy flow code onto container within dockerfile, because prefect will run a script to retrieve flow code from remote storage
+- Compute instance running must have docker installed. duh.
 
 How to debug without overriding entrypoint...
