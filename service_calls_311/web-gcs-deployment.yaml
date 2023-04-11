@@ -18,7 +18,7 @@ description: |-
       if true, overwrite existing parquet/dataset
   test: bool
       if true, load only a small subset onto bigquery
-version: 95b9756864d05c1fe384f38203aed3de
+version: 045d00873ce5c4293b07f099c77273e9
 # The work queue that will handle this deployment's runs
 work_queue_name: service-calls
 work_pool_name: default-agent-pool
@@ -26,7 +26,7 @@ tags: []
 parameters:
   bucket_name: service-data-lake
   dataset_name: service_calls_models
-  year: '2022'
+  year: '2021'
   test: 'True'
 schedule: null
 is_schedule_active: true
@@ -43,8 +43,9 @@ infrastructure:
     TF_VAR_region: us-west1
     TF_VAR_bq_dataset: service_calls_models
     TF_VAR_project_id: service-calls-pipeline-382901
+    GOOGLE_CLOUD_PROJECT: service-calls-pipeline-382901
     TF_VAR_data_lake_bucket: service-data-lake
-    GOOGLE_APPLICATION_CREDENTIALS: /gcp/creds.json
+    GOOGLE_APPLICATION_CREDENTIALS: /gcloud/application_default_credentials.json
   labels: {}
   name: service-call-infra
   command: null
@@ -55,7 +56,7 @@ infrastructure:
   network_mode: null
   auto_remove: false
   volumes:
-  - /home/klang/.config/gcloud/application_default_credentials.json:/gcp/creds.json
+  - /home/kohada/.config/gcloud:/gcloud
   stream_output: true
   memswap_limit: null
   mem_limit: null
@@ -107,4 +108,4 @@ parameter_openapi_schema:
   - dataset_name
   - year
   definitions: null
-timestamp: '2023-04-10T16:11:05.995404+00:00'
+timestamp: '2023-04-11T16:12:40.917062+00:00'

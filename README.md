@@ -16,39 +16,38 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 ## Data visualization
 
-
 ## Project architecture
 
 - Data is pulled on a monthly basis to sync with its refresh rate at the source
 - data lake: GCS
-    - stores raw csv and schema'd parquets
+  - stores raw csv and schema'd parquets
 - ~~batch processing: dataproc (spark)~~
-    - replaced in favour of dbt since distributed computing is not required here
-    - remove outliers in dates
-    - remove entries without ward/FSA data
-    - feature engineer
+  - replaced in favour of dbt since distributed computing is not required here
+  - remove outliers in dates
+  - remove entries without ward/FSA data
+  - feature engineer
 - data warehouse: Bigquery
-    - part of extraction to create a facts table with the schema'd parquets from gcs
-        - [`create_table` docs](https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_create_table)
-    - stores the various models used for visualizations
-    - partitioning/clustering
+  - part of extraction to create a facts table with the schema'd parquets from gcs
+    - [`create_table` docs](https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_create_table)
+  - stores the various models used for visualizations
+  - partitioning/clustering
 - transform: dbt
-    - models the raw datasets that have been loaded onto bigquery
-    - documentation
-    - tests
+  - models the raw datasets that have been loaded onto bigquery
+  - documentation
+  - tests
 - orchestration: Prefect
-    - facilitates monthly refresh: pull, process, store models
-    - monitoring and logging
-    - restarts
-    - handles late data
+  - facilitates monthly refresh: pull, process, store models
+  - monitoring and logging
+  - restarts
+  - handles late data
 - Visualization: Metabase/Streamlit
-    - combine with geojson to produce choropleth map
+  - combine with geojson to produce choropleth map
 - IaC: Terraform
-    - responsible for cloud infra
-    - gcs bucket
-    - bigquery dataset
-    - [service account with necessary permissions to manage cloud resources](https://registry.terraform.io/modules/terraform-google-modules/service-accounts/google/latest)
-    - ~~dataproc cluster~~
+  - responsible for cloud infra
+  - gcs bucket
+  - bigquery dataset
+  - [service account with necessary permissions to manage cloud resources](https://registry.terraform.io/modules/terraform-google-modules/service-accounts/google/latest)
+  - ~~dataproc cluster~~
 
 ## Run it yourself!
 
@@ -59,8 +58,6 @@ Besides finding the area with the most noise complaints, this project is an exer
 - project ID
 - bucket name
 - dataset name
-
-How to forward them to python script prefect flow?
 
 Once a variable is defined, terraform can accept environment variables by searching for `TF_VAR_<VAR_NAME>`. E.g. if we have `var.project_id`, we can export `TF_VARS_project_id=my-first-project` and `terraform plan` will be able to search for it.
 
@@ -81,6 +78,7 @@ TF_VAR_project_id=
 TF_VAR_region=
 TF_VAR_zone=
 TFSTATE_BUCKET=tf-state-service
+PREFECT_API_URL=
 ```
 
 ### Setup
@@ -119,17 +117,27 @@ terraform init \
 -migrate-state
 ```
 
+#### Prefect
+
+- Create a prefect cloud workspace
+- Obtain the `PREFECT_API_URL` and `PREFECT_API_KEY`
+- `URL` is required for the service agent compute instance
+  - `prefect config set PREFECT_API_URL=YOUR_URL_HERE`
+- `KEY` is required for dev environment to build and apply deployment flows, and for agent to authenticate itself in order to retrieve jobs
+- `make_infra.py` must be run on the prefect agent instance so that the credential volume is mounted properly
+  - integrate into terraform as part of instance initiation
+  - `metadata_startup_script`?
+
 ## data resources
 
 Full credits to statscan and open data toronto for providing these datasets.
 
 - [city ward geojson](https://open.toronto.ca/dataset/city-wards/)
 - [forward sortation area boundary file](https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/bound-limit-2016-eng.cfm)
-    - FSA is the first three characters in the postal code and correspond roughly to a neighborhood
+  - FSA is the first three characters in the postal code and correspond roughly to a neighborhood
 - [Article on converting that to geojson](https://medium.com/dataexplorations/generating-geojson-file-for-toronto-fsas-9b478a059f04)
 - [311 service requests](https://open.toronto.ca/dataset/311-service-requests-customer-initiated/)
 - [article on using folium](https://realpython.com/python-folium-web-maps-from-data/)
-
 
 ## Log
 
@@ -139,3 +147,5 @@ Full credits to statscan and open data toronto for providing these datasets.
 - 23/3/22 - add transform - UDF to extract season
 - 23/3/24 - add transform - SQL `CASE WHEN` to extract season
 - 23/3/25 - add transform - top *n* types per ward, per season, and wards per type
+- 23/4/xx - terraform and prefect
+- 23/4/10 - dockerize the prefect service agent

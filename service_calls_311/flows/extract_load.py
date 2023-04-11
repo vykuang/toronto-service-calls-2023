@@ -15,10 +15,11 @@ import os
 
 # load_dotenv()
 
-GCP_PROJECT_ID = os.getenv("TF_VAR_project_id", default=None)
-LOCATION = os.getenv("TF_VAR_region", default=None)
-BUCKET = os.getenv("TF_VAR_data_lake_bucket", default=None)
-DATASET = os.getenv("TF_VAR_bq_dataset", default=None)
+GOOGLE_CLOUD_PROJECT = os.getenv("TF_VAR_project_id")
+os.environ["GOOGLE_CLOUD_PROJECT"] = GOOGLE_CLOUD_PROJECT
+LOCATION = os.getenv("TF_VAR_region")
+BUCKET = os.getenv("TF_VAR_data_lake_bucket")
+DATASET = os.getenv("TF_VAR_bq_dataset")
 
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
@@ -174,8 +175,8 @@ def blob_exists(blob_path: str, bucket_name: str) -> bool:
     Does this blob exist?
     """
     logger = get_run_logger()
-    logger.info(f"{GCP_PROJECT_ID}: GCP project ID")
-    gcs = storage.Client(project=GCP_PROJECT_ID)
+    logger.info(f"{GOOGLE_CLOUD_PROJECT}: GCP project ID")
+    gcs = storage.Client(project=GOOGLE_CLOUD_PROJECT)
     bucket = gcs.bucket(bucket_name=bucket_name)
     exists = storage.Blob(bucket=bucket, name=blob_path).exists(client=gcs)
     logger.info(f"{blob_path} already exists: {exists}")
@@ -232,10 +233,10 @@ def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
     LoadJob class object
     """
     logger = get_run_logger()
-    logger.info(f"{GCP_PROJECT_ID}: GCP project ID")
+    logger.info(f"{GOOGLE_CLOUD_PROJECT}: GCP project ID")
     client = bigquery.Client(
         location=location,
-        project=GCP_PROJECT_ID,  # infer from env
+        project=GOOGLE_CLOUD_PROJECT,  # infer from env
         # credentials=creds # not needed if instance is already credentialled
     )
     job_config = bigquery.LoadJobConfig(
@@ -249,7 +250,7 @@ def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
         src_uris,
         dest_table,
         job_config=job_config,
-        project=GCP_PROJECT_ID,
+        project=GOOGLE_CLOUD_PROJECT,
     )
     logger.info(f"Job creation time: {load_job.created}")
     load_job.add_done_callback(

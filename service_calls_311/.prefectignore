@@ -52,4 +52,3 @@ terraform/
 # poetry
 *.lock
 *.toml
-

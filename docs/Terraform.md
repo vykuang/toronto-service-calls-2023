@@ -64,7 +64,7 @@ Most likely we'll want some remote cloud storage. Paradox is that the backend bu
 
 1. CLI argument: `-backend-config="KEY=VALUE"`; repeat for each K/V pair
 1. file: `-backend-config=path/to/config.gcs.tfbackend`
-    - file lists all the `KEY = VALUE` pairs in top level
+   - file lists all the `KEY = VALUE` pairs in top level
 
 To parametrize the backend bucket, CLI seems more approachable.
 
@@ -85,6 +85,7 @@ terraform init \
 ```
 
 If successful, in addition to terminal log, a `.terraform/` folder and `.terraform.lock.hcl` file will appear
+
 ## Provider
 
 Specify our project ID, default region, and if not already on GCE, path to cloud credential
@@ -153,9 +154,9 @@ There are several components:
 - google_iam_policy - this defines the roles that can be applied to service accounts
 - google_service_account - creates the service account
 - google_service_account_iam_policy - assigns the roles to the account
-    - there is also ...account_iam_*binding* and account_iam_*member* which update the policies as opposed to a blanket overwrite
-    - the above do *not* assign roles to service accounts; instead they treat the service accounts as resources, and allow other members, e.g. users or other service accounts to perform tasks as that service account
-    - so technically we could create a dummy SA, assign it permissions A, B, and C, then assign all the members to the dummy SA so that they could execute their tasks *as dummy SA*, which again, has the required permissions
+  - there is also ...account_iam\_*binding* and account_iam\_*member* which update the policies as opposed to a blanket overwrite
+  - the above do *not* assign roles to service accounts; instead they treat the service accounts as resources, and allow other members, e.g. users or other service accounts to perform tasks as that service account
+  - so technically we could create a dummy SA, assign it permissions A, B, and C, then assign all the members to the dummy SA so that they could execute their tasks *as dummy SA*, which again, has the required permissions
 - more straightforwardly let's use `google_project_iam_policy`
 
 ### service account
@@ -244,7 +245,7 @@ The differences between the three are:
 
 - `policy` - sets all roles for all members in the project; defines a complete policy for the project
 - `binding` - defines all members of the role
-    - if we're binding role A to members F, H, and G had role A before, then `binding` would grant role A only to F and H, and revoke it from G
+  - if we're binding role A to members F, H, and G had role A before, then `binding` would grant role A only to F and H, and revoke it from G
 - `member` - updates member list for that role
 
 ### service account background
@@ -269,8 +270,8 @@ gcloud projects add-iam-policy-binding PROJECT_ID \
 - PRINCIPAL_ID: the email associated with the account, or its unique numeric ID
 - roles: must start with roles/...
 - conditions: optional; must be fulfilled for the specified role to be granted. Not applicable to basic roles, e.g. roles/owner, editor, viewer.
-    - date/time
-    - resource attributes, e.g. prefix of account ID must match some pattern
+  - date/time
+  - resource attributes, e.g. prefix of account ID must match some pattern
 - `remove-iam-policy-binding` to revoke the role
 - `set-iam-policy` overwrites instead of append, and requires passing a file that includes the complete list of policies for that project
 
@@ -361,7 +362,6 @@ Alternatively, instead of passing `permissions`, pass `file` and point to path o
 
 Cloud APIs need to be enabled to use resources, e.g. compute engine API is required for TF to allocate a VM instance. Use `google_project_service` resource block to enable APIs
 
-
 ## Modules
 
 Containers for multiple resources used together; consists of a collection of `.tf` or `.tf.json` kept together in a directory. Every terraform config has at least one module, the *root module*, containing `main.tf`
@@ -402,6 +402,6 @@ bq load \
 references
 
 - [bq and geojson](https://cloud.google.com/bigquery/docs/geospatial-data#geojson-files)
-    - original format has a single `FeatureCollection` object containing all geometries
-    - use `jq`, an `sed`-like tool for json, to remove that root-level object and split each individual feature into separate lines
+  - original format has a single `FeatureCollection` object containing all geometries
+  - use `jq`, an `sed`-like tool for json, to remove that root-level object and split each individual feature into separate lines
 - [bq cli docs](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference#bq_load)

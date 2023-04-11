@@ -27,8 +27,8 @@ Specifically, if our agent is running on GCE, we would run `prefect agent start 
 There's two ways:
 
 1. Since the code is already written as a flow, we set up the environment in which to run the code. The container only `poetry installs` all dependencies for the code to run.
-2. We encapsulate the code inside the container, and the prefect flow is further abstracted to a mere invocation of this container, while still supplying the necessary arguments
-    - existing work resembles the first option more, so let's go with 1.
+1. We encapsulate the code inside the container, and the prefect flow is further abstracted to a mere invocation of this container, while still supplying the necessary arguments
+   - existing work resembles the first option more, so let's go with 1.
 
 ### Custom image
 
@@ -43,13 +43,13 @@ Let's try it locally by mounting the flow code
 - supply `GOOGLE_CLOUD_PROJECT=${TF_VAR_project_id}` in list of env vars
 - supply `PREFECT_API_KEY` and `PREFECT_API_URL`? I think it needs to access the google secret for the key.
 
-[According to prefect docs](https://docs.prefect.io/latest/concepts/infrastructure/#building-your-own-image) the last command being run is `RUN pip install`. To provide our custom image in a execution ready state, add `ENTRYPOINT [ "poetry", "shell" ] to activate the venv that includes our dependencies
+[According to prefect docs](https://docs.prefect.io/latest/concepts/infrastructure/#building-your-own-image) the last command being run is `RUN pip install`. To provide our custom image in a execution ready state, add \`ENTRYPOINT \[ "poetry", "shell" \] to activate the venv that includes our dependencies
 
 - unable to detect the current shell???
 - try activating manually with `source $(poetry env info --path)/bin/activate`
-    - [docs here](https://python-poetry.org/docs/basic-usage/#activating-the-virtual-environment)
+  - [docs here](https://python-poetry.org/docs/basic-usage/#activating-the-virtual-environment)
 - in order for `ENTRYPOINT` to expand variable substitution, must add `/bin/bash -c` in front:
-    `ENTRYPOINT ["/bin/bash", "-c", "source $(poetry env info --path)/bin/activate"]`
+  `ENTRYPOINT ["/bin/bash", "-c", "source $(poetry env info --path)/bin/activate"]`
 - and for some reason `FILE NAME` and `source` must be in same double quotes
 - I think it's because that whole thing is the arg for `bash`
 - Do not copy flow code onto container within dockerfile, because prefect will run a script to retrieve flow code from remote storage
