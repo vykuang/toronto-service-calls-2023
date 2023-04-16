@@ -67,7 +67,7 @@ With a key/value pair list in `.env`, export all of them in a script:
 
 ```bash
 set -o allexport
-source .env
+source ../.env
 set +o allexport
 ```
 
@@ -96,7 +96,11 @@ To use any resource, the new project must be linked to a billing account. In con
 
 #### Terraform
 
-Create bucket for terraform backend and initialize. Ensure the current user account has admin level status on the created project
+- Create bucket for terraform backend and initialize
+- Ensure the current user account has admin level status on the created project
+  - gcs read/write
+  - bigquery load
+  - secret accessor
 
 ```bash
 # cd to terraform dir
@@ -115,18 +119,36 @@ terraform init \
 -backend-config="bucket=$TFSTATE_BUCKET" \
 -backend-config="prefix=terraform/state" \
 -migrate-state
+terraform apply
 ```
+
+This will create:
+
+- GCS bucket
+- bq dataset
+- secret to hold `PREFECT_API_KEY`
+  - only place holder
+  - populate with the actual key using the cloud console > secret manager > select `prefect-api-key` > add version
+- GCE instance to execute prefect flow
+- service account with permissions to access the above resources
 
 #### Prefect
 
 - Create a prefect cloud workspace
 - Obtain the `PREFECT_API_URL` and `PREFECT_API_KEY`
+  - go to google cloud console's secret manager, and add version for `prefect-api-key`
+  - sensitive data will not be stored in any files; instead their access will be controlled by the Secret Manager, and the permission given to the service account
 - `URL` is required for the service agent compute instance
   - `prefect config set PREFECT_API_URL=YOUR_URL_HERE`
 - `KEY` is required for dev environment to build and apply deployment flows, and for agent to authenticate itself in order to retrieve jobs
 - `make_infra.py` must be run on the prefect agent instance so that the credential volume is mounted properly
   - integrate into terraform as part of instance initiation
   - `metadata_startup_script`?
+  - `agent-startup.sh` must be loaded onto bucket *during* terraform, but *before* gce instance
+    - `prefect cloud login --key=$(gcloud secrets versions access 1 --secret="prefect-cloud-api") --workspace=PREFECT_WORKSPACE`
+    - `PREFECT_WORKSPACE`: <account>/\<workspace_name>
+    - but running in terraform means that secret already needs to exist
+    - outside TF's purview?
 
 ## data resources
 

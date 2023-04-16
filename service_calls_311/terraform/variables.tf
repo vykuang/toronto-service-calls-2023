@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  default     = "service-calls-pipeline-382901"
+  default     = null
   description = "GCP project ID"
 }
 variable "project_name" {
@@ -40,14 +40,14 @@ variable "service_account_name" {
   description = "service account friendly display name"
 }
 # not req'd if we're defining the specific permissions
-# variable "prefect_roles" {
-#     description = "list of roles assigned to the executor service account"
-#     type = set(string)
-#     default = [
-#         "roles/bigquery.dataEditor",
-#         "roles/bigquery.jobUser",
-#     ]
-# }
+variable "prefect_roles" {
+    description = "list of roles assigned to the executor service account"
+    type = set(string)
+    default = [
+        "roles/bigquery.jobUser",
+        "roles/secretmanager.secretAccessor",
+    ]
+}
 variable "agent_permissions" {
   type = set(string)
   default = [

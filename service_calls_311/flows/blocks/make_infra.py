@@ -5,12 +5,13 @@ Run this script on the prefect agent instance so that $HOME gets
 the correct directory to mount the credential file
 """
 from prefect.infrastructure.docker import DockerContainer
-from dotenv import load_dotenv
-from pathlib import Path
+
+# from dotenv import load_dotenv
+# from pathlib import Path
 import os
 
-env_file = Path("../../.env").resolve()
-load_dotenv(env_file)
+# env_file = Path("../../.env").resolve()
+# load_dotenv(env_file)
 
 GOOGLE_CLOUD_PROJECT = os.getenv("TF_VAR_project_id")
 LOCATION = os.getenv("TF_VAR_region")

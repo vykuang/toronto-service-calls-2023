@@ -85,13 +85,26 @@ resource "google_bigquery_dataset_iam_member" "service-agent-iam" {
 
 # still requires bigquery.jobUser at project level
 resource "google_project_iam_member" "service-agent-iam" {
+  for_each = var.prefect_roles
   project = var.project_id
-  role    = "roles/bigquery.jobUser"
+  role    = each.key
   member  = local.sa_member
+}
+
+# secret to store PREFECT_API_KEY
+resource "google_secret_manager_secret" "prefect" {
+  secret_id = "prefect-api-key"
+  replication {
+    automatic = true
+  }
 }
 
 data "google_compute_image" "default" {
   family  = "ubuntu-2004-lts"
+  project = "ubuntu-os-cloud"
+}
+data "google_compute_image" "agent" {
+  family  = "ubuntu-2204-lts"
   project = "ubuntu-os-cloud"
 }
 
@@ -113,6 +126,33 @@ resource "google_compute_instance" "default" {
       image = data.google_compute_image.default.self_link
     }
 
+  }
+  network_interface {
+    network = "default"
+    access_config {
+      network_tier = "STANDARD"
+
+    }
+  }
+  service_account {
+    email  = google_service_account.service-agent.email
+    scopes = ["cloud-platform"]
+  }
+  depends_on = [time_sleep.wait_service_enable]
+}
+resource "google_compute_instance" "agent" {
+  name         = "agent"
+  machine_type = "e2-medium"
+  boot_disk {
+    initialize_params {
+      size  = 10
+      type  = "pd-standard"
+      image = data.google_compute_image.agent.self_link
+    }
+
+  }
+  metadata = {
+    startup-script-url = "gs://service-data-lake/code/agent-startup.sh"
   }
   network_interface {
     network = "default"
