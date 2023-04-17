@@ -131,6 +131,7 @@ This will create:
   - populate with the actual key using the cloud console > secret manager > select `prefect-api-key` > add version
 - GCE instance to execute prefect flow
 - service account with permissions to access the above resources
+- upload the agent-startup.sh for agent to retrieve and install docker and prefect
 
 #### Prefect
 

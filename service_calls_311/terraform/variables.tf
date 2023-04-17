@@ -67,9 +67,16 @@ variable "gcp_service_list" {
   default = [
     "compute.googleapis.com",
     "storage-component.googleapis.com",
-    "bigquery.googleapis.com"
+    "bigquery.googleapis.com",
+    "iam.googleapis.com",
+    "secretmanager.googleapis.com"
   ]
   description = "APIs to be enabled in GCP project"
+}
+
+variable "prefect_api_key" {
+    type = string
+    description = "API key to authenticate with remote prefect cloud workspace"
 }
 
 # variable "tf_state_bucket" {

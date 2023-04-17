@@ -91,19 +91,38 @@ resource "google_project_iam_member" "service-agent-iam" {
   member  = local.sa_member
 }
 
+# upload agent-startup.sh to bucket
+resource "google_storage_bucket_object" "prefect-block" {
+  name = "code/make_infra.py"
+  source = "../flows/blocks/make_infra.py"
+  bucket = google_storage_bucket.data-lake.name
+}
 # secret to store PREFECT_API_KEY
 resource "google_secret_manager_secret" "prefect" {
   secret_id = "prefect-api-key"
   replication {
     automatic = true
   }
+  depends_on = [google_project_service.services["secretmanager.googleapis.com"]]
 }
-
+# secret to store
+resource "google_secret_manager_secret" "test" {
+  secret_id = "prefect-test-key"
+  replication {
+    automatic = true
+  }
+  depends_on = [google_project_service.services["secretmanager.googleapis.com"]]
+}
+# test secret
+resource "google_secret_manager_secret_version" "prefect-key" {
+  secret = google_secret_manager_secret.test.id
+  secret_data = var.prefect_api_key
+}
 data "google_compute_image" "default" {
   family  = "ubuntu-2004-lts"
   project = "ubuntu-os-cloud"
 }
-data "google_compute_image" "agent" {
+data "google_compute_image" "prefect" {
   family  = "ubuntu-2204-lts"
   project = "ubuntu-os-cloud"
 }
@@ -116,6 +135,7 @@ resource "time_sleep" "wait_service_enable" {
   depends_on = [google_project_service.services]
 }
 
+# test?
 resource "google_compute_instance" "default" {
   name         = "test"
   machine_type = "e2-medium"
@@ -140,6 +160,46 @@ resource "google_compute_instance" "default" {
   }
   depends_on = [time_sleep.wait_service_enable]
 }
+
+# test?
+resource "google_compute_instance" "server" {
+  name         = "server"
+  machine_type = "e2-medium"
+  boot_disk {
+    initialize_params {
+      size  = 10
+      type  = "pd-standard"
+      image = data.google_compute_image.prefect.self_link
+    }
+
+  }
+  network_interface {
+    network = "default"
+    access_config {
+      network_tier = "STANDARD"
+
+    }
+  }
+  metadata_startup_script = <<SCRIPT
+    if [[ -f /etc/startup_was_launched ]]; then exit 0; fi
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt autoremove -y
+    sudo apt install python3-pip -y
+    pip3 install -U pip "prefect==2.8.4"
+    echo "export PATH="/home/$USER/.local/bin:$PATH"" > ~/.bashrc
+    source ~/.bashrc
+    touch /etc/startup_was_launched
+    prefect server start
+    SCRIPT
+  service_account {
+    email  = google_service_account.service-agent.email
+    scopes = ["cloud-platform"]
+  }
+  depends_on = [time_sleep.wait_service_enable]
+}
+
+# prefect agent?
 resource "google_compute_instance" "agent" {
   name         = "agent"
   machine_type = "e2-medium"
@@ -147,13 +207,52 @@ resource "google_compute_instance" "agent" {
     initialize_params {
       size  = 10
       type  = "pd-standard"
-      image = data.google_compute_image.agent.self_link
+      image = data.google_compute_image.prefect.self_link
     }
 
   }
   metadata = {
-    startup-script-url = "gs://service-data-lake/code/agent-startup.sh"
+    # startup-script-url = "gs://service-data-lake/code/agent-startup.sh"
+
   }
+  metadata_startup_script = <<SCRIPT
+    if [[ -f /etc/startup_was_launched ]]; then exit 0; fi
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt autoremove -y
+    sudo apt remove docker docker-engine docker.io containerd runc -y
+    sudo apt install \
+        ca-certificates \
+        curl \
+        gnupg
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+    echo \
+    "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt update
+    sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+    sudo usermod -aG docker $USER
+    newgrp docker
+    sudo apt install python3-pip -y
+    pip3 install -U pip "prefect==2.8.4"
+    echo "export PATH="/home/$USER/.local/bin:$PATH"" >> ~/.bashrc
+    echo "export TF_VAR_project_id=${var.project_id}" >> ~/.bashrc
+    echo "export TF_VAR_region=${var.region}" >> ~/.bashrc
+    echo "export TF_VAR_zone=${var.zone}" >> ~/.bashrc
+    echo "export TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> ~/.bashrc
+    echo "export TF_VAR_bq_dataset=${var.bq_dataset}" >> ~/.bashrc
+    source ~/.bashrc
+    # make_infra
+    mkdir $HOME/code && cd $HOME/code
+    gsutil cp ${google_storage_bucket.data-lake.url}/code/make_infra.py make_infra.py
+    python make_infra.py
+    # create flag to indicate instance has been launched before
+    touch /etc/startup_was_launched
+    prefect agent start --api=https://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}/api
+    SCRIPT
   network_interface {
     network = "default"
     access_config {
@@ -165,7 +264,11 @@ resource "google_compute_instance" "agent" {
     email  = google_service_account.service-agent.email
     scopes = ["cloud-platform"]
   }
-  depends_on = [time_sleep.wait_service_enable]
+  depends_on = [
+    time_sleep.wait_service_enable,
+    google_compute_instance.server,
+    google_storage_bucket_object.prefect-block
+  ]
 }
 # resource "google_storage_bucket" "dp-staging" {
 #     name = var.dp_staging

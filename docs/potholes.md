@@ -92,3 +92,15 @@ Summary of problems along the way
     - the infra block will then correctly mount the host instance cred directory
     - [gcloud startup script docs](https://cloud.google.com/compute/docs/instances/startup-scripts/linux#gcloud)
     - [terraform metadata startup docs](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance#metadata_startup_script)
+    - startup-script can install docker, pip, prefect, but terraform is not able `prefect cloud login` without pre-existing secret
+      - create secret with terraform
+      - do not set default in `variables.tf`; have it take from local env `TF_VAR_prefect_api_key`
+      - key stays in local environment, as well as remote state storage
+- prior to creating the infra block, must connect with either remote server or cloud API endpoint
+  - both requires `URL`
+  - if we want to create the infra block during start-up, `URL` needs to be known before script upload
+    - if remote prefect server is created as part of TF, `URL` can only be known after instance creation, via `network_interface.0.access_config.0.nat_ip`
+    - how can the `startup-script` access this via prior to being uploaded to GCS?
+  - do not upload script; if we keep the script in plain-text, we can use string interpolation to retrieve the newly created instance's IP
+  - move away from prefect cloud; create the prefect server, attach the same service account
+  - script in plain-text inside `main.tf` can reference all resource attributes
