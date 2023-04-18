@@ -16,6 +16,7 @@ data/notebooks/
 *.csv
 *.zip
 *.parquet
+prefect-test/
 
 # terraform artifacts
 .terraform

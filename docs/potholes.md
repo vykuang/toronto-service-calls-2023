@@ -104,3 +104,48 @@ Summary of problems along the way
   - do not upload script; if we keep the script in plain-text, we can use string interpolation to retrieve the newly created instance's IP
   - move away from prefect cloud; create the prefect server, attach the same service account
   - script in plain-text inside `main.tf` can reference all resource attributes
+- deploy remote prefect server:
+  - instance firewall must accept ipv4 range `0.0.0.0/0` for port `4200`
+  - install pip, prefect
+    - export PATH so `prefect` command is recognized
+  - `prefect config set PREFECT_UI_API_URL=http://<EXTERNAL_IP>:4200/api` on server instance
+    - must be `http`, not `https`
+    - must have `compute.instances.get` project-level permission to retrieve its own external IP
+    - `gcloud compute instances describe server --zone us-west1-b | grep natIP | cut -d: -f 2 | tr -d ' '` extracts external IP
+  - `prefect config set PREFECT_API_URL="http://<EXTERNAL_IP>:4200/api"` on agent instance, *and* on local dev environment so that we can access the UI
+
+## dbt
+
+[Schedule dbt cloud with prefect](https://medium.com/the-prefect-blog/schedule-orchestrate-dbt-cloud-jobs-with-prefect-b64c3b7f2a02)
+
+- dbt account id: last digits from account settings url
+
+- API key: left nav > API access > view
+
+  - save to local .env and create `DbtCloudCredentials` via `.py`, or create in UI
+
+- create new job, and disable schedule so prefect can orchestrate (turn off run on schedule under trigger)
+
+- copy job ID from URL
+
+- code to run with prefect:
+
+  ```py
+  from prefect import flow
+
+  from prefect_dbt.cloud import DbtCloudCredentials
+  from prefect_dbt.cloud.jobs import trigger_dbt_cloud_job_run_and_wait_for_completion
+
+
+  @flow
+  def run_dbt_job_flow():
+      trigger_dbt_cloud_job_run_and_wait_for_completion(
+          dbt_cloud_credentials=DbtCloudCredentials.load("default"), job_id=JOB_ID
+      )
+
+
+  if __name__ == "__main__":
+      run_dbt_job_flow()
+  ```
+
+Requires [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)

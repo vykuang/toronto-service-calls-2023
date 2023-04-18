@@ -182,15 +182,20 @@ resource "google_compute_instance" "server" {
   }
   metadata_startup_script = <<SCRIPT
     if [[ -f /etc/startup_was_launched ]]; then exit 0; fi
+    gcloud config set compute/zone ${var.zone}
     sudo apt update
     sudo apt upgrade -y
     sudo apt autoremove -y
     sudo apt install python3-pip -y
     pip3 install -U pip "prefect==2.8.4"
-    echo "export PATH="/home/$USER/.local/bin:$PATH"" > ~/.bashrc
-    source ~/.bashrc
+    sudo chmod 666 /etc/environment
+    sudo echo "export PATH="/home/$USER/.local/bin:$PATH"" >> /etc/environment
+    sudo echo "export EXTERNAL_IP=$(gcloud compute instances describe ${google_compute_instance.server.name} | grep natIP | cut -d: -f 2 | tr -d ' '
+    source /etc/environment
+    sudo chmod 444 /etc/environment
     touch /etc/startup_was_launched
-    prefect server start
+    prefect config set PREFECT_UI_API_URL=http://$EXTERNAL_IP:4200/api
+    prefect server start --host 0.0.0.0
     SCRIPT
   service_account {
     email  = google_service_account.service-agent.email
@@ -237,21 +242,24 @@ resource "google_compute_instance" "agent" {
     sudo usermod -aG docker $USER
     newgrp docker
     sudo apt install python3-pip -y
-    pip3 install -U pip "prefect==2.8.4"
-    echo "export PATH="/home/$USER/.local/bin:$PATH"" >> ~/.bashrc
-    echo "export TF_VAR_project_id=${var.project_id}" >> ~/.bashrc
-    echo "export TF_VAR_region=${var.region}" >> ~/.bashrc
-    echo "export TF_VAR_zone=${var.zone}" >> ~/.bashrc
-    echo "export TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> ~/.bashrc
-    echo "export TF_VAR_bq_dataset=${var.bq_dataset}" >> ~/.bashrc
-    source ~/.bashrc
+    pip3 install -U pip "prefect==2.8.4" prefect-dbt
+    sudo chmod 666 /etc/environment
+    sudo echo "export PATH="/home/$USER/.local/bin:$PATH"" >> /etc/environment
+    sudo echo "export TF_VAR_project_id=${var.project_id}" >> /etc/environment
+    sudo echo "export TF_VAR_region=${var.region}" >> /etc/environment
+    sudo echo "export TF_VAR_zone=${var.zone}" >> /etc/environment
+    sudo echo "export TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> /etc/environment
+    sudo echo "export TF_VAR_bq_dataset=${var.bq_dataset}" >> /etc/environment
+    source /etc/environment
+    sudo chmod 444 /etc/environment
+    prefect config set PREFECT_API_URL="https://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}:4200/api"
     # make_infra
-    mkdir $HOME/code && cd $HOME/code
+    mkdir /code && cd /code
     gsutil cp ${google_storage_bucket.data-lake.url}/code/make_infra.py make_infra.py
     python make_infra.py
     # create flag to indicate instance has been launched before
     touch /etc/startup_was_launched
-    prefect agent start --api=https://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}/api
+    prefect agent start -q service-calls
     SCRIPT
   network_interface {
     network = "default"

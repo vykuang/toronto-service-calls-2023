@@ -46,6 +46,7 @@ variable "prefect_roles" {
     default = [
         "roles/bigquery.jobUser",
         "roles/secretmanager.secretAccessor",
+        "roles/compute.osLogin",
     ]
 }
 variable "agent_permissions" {
