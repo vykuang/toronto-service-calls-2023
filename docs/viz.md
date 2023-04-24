@@ -7,6 +7,21 @@ Whiteboard for basic data viz of the service call dataset
 - Wards by request
 - Total service call by status
 
+Let's focus on the choropleth:
+
+- use ward map as the basis
+- add control filter for season
+- tool-tip for top-`n` request types?
+  - stick with ward name; use color depth to differentiate
+- color depth for subtotal count of that ward
+
+## Time-series
+
+Charts how the requests pile up
+
+- use the facts table as basisfor their `creation_datetime`
+- subtotal count for each day
+
 ## Requests by ward
 
 Map of the wards

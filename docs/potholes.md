@@ -159,3 +159,28 @@ Requires [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)
 - commit and sync to branch before running command
 - bigquery has `ROUND(expr, precision)` function
   - replace CAST()
+- Seed `ward_id_lookup.csv` for dbt generic testing
+
+## Viz
+
+### Choropleth
+
+Table needs to join with `city-wards.geojson` to get the `geometry` field
+
+```sql
+SELECT r.*, m.geometry
+FROM service_calls_dev.requests_by_ward r
+left join city_wards_map m
+on r.ward_name = m.AREA_NAME
+```
+
+Seed the geojson, along with `ward_id_lookup.csv` for dbt generic testing
+
+### geojson
+
+How to automate loading the geojson as a table in bq?
+
+- save in `data/`
+- use `bq load`
+  - part of terraform???
+  - converted, newline delimited json to be part of base repo
