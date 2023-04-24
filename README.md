@@ -51,6 +51,8 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 ## Run it yourself!
 
+Clone this repo to start
+
 ### Env vars
 
 #### Terraform
@@ -61,24 +63,20 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 Once a variable is defined, terraform can accept environment variables by searching for `TF_VAR_<VAR_NAME>`. E.g. if we have `var.project_id`, we can export `TF_VARS_project_id=my-first-project` and `terraform plan` will be able to search for it.
 
-Load them in python via `dotenv`
-
 With a key/value pair list in `.env`, export all of them in a script:
 
 ```bash
-set -o allexport
-source ../.env
-set +o allexport
-```
-
-Set these vars for the commands below:
-
-```bash
+# .env file
 TF_VAR_project_id=
 TF_VAR_region=
 TF_VAR_zone=
 TFSTATE_BUCKET=tf-state-service
-PREFECT_API_URL=
+```
+
+```bash
+set -o allexport
+source ./.env
+set +o allexport
 ```
 
 ### Setup
@@ -122,34 +120,31 @@ terraform init \
 terraform apply
 ```
 
-This will create:
+`terraform apply` will create:
 
 - GCS bucket
 - bq dataset
-- secret to hold `PREFECT_API_KEY`
-  - only place holder
-  - populate with the actual key using the cloud console > secret manager > select `prefect-api-key` > add version
-- GCE instance to execute prefect flow
+- GCE instance, `server`, to orchestrate prefect flow
+- GCE instance, `agent`, to execute prefect flow
 - service account with permissions to access the above resources
-- upload the agent-startup.sh for agent to retrieve and install docker and prefect
 
 #### Prefect
 
-- Create a prefect cloud workspace
-- Obtain the `PREFECT_API_URL` and `PREFECT_API_KEY`
-  - go to google cloud console's secret manager, and add version for `prefect-api-key`
-  - sensitive data will not be stored in any files; instead their access will be controlled by the Secret Manager, and the permission given to the service account
-- `URL` is required for the service agent compute instance
-  - `prefect config set PREFECT_API_URL=YOUR_URL_HERE`
-- `KEY` is required for dev environment to build and apply deployment flows, and for agent to authenticate itself in order to retrieve jobs
-- `make_infra.py` must be run on the prefect agent instance so that the credential volume is mounted properly
+`make_infra.py` must be run on the prefect agent instance so that the credential volume is mounted properly
   - integrate into terraform as part of instance initiation
-  - `metadata_startup_script`?
-  - `agent-startup.sh` must be loaded onto bucket *during* terraform, but *before* gce instance
-    - `prefect cloud login --key=$(gcloud secrets versions access 1 --secret="prefect-cloud-api") --workspace=PREFECT_WORKSPACE`
-    - `PREFECT_WORKSPACE`: <account>/\<workspace_name>
-    - but running in terraform means that secret already needs to exist
-    - outside TF's purview?
+  - `metadata_startup_script` will execute `make_infra.py`
+
+#### dbt
+
+Prefect requires these info to orchestrate dbt cloud jobs:
+
+- account API
+  - dbt account info -> API -> reveal API
+- job number
+  - create job -> note the integer ID of the URL afte rthe `dbt build` job has been created
+
+Use these two to create `dbt cloud run` block
+
 
 ## data resources
 
@@ -172,3 +167,6 @@ Full credits to statscan and open data toronto for providing these datasets.
 - 23/3/25 - add transform - top *n* types per ward, per season, and wards per type
 - 23/4/xx - terraform and prefect
 - 23/4/10 - dockerize the prefect service agent
+- 23/4/22 - convert spark to bigquery sql
+- 23/4/23 - looker choropleth
+- 23/4/24 - code reproduction

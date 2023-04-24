@@ -44,7 +44,7 @@ variable "prefect_roles" {
     description = "list of roles assigned to the executor service account"
     type = set(string)
     default = [
-        "roles/bigquery.jobUser",
+        "roles/bigquery.user",
         "roles/secretmanager.secretAccessor",
         "roles/compute.osLogin",
     ]
@@ -56,6 +56,7 @@ variable "agent_permissions" {
     "bigquery.tables.updateData",
     "bigquery.tables.update",
     "bigquery.jobs.create",
+    "bigquery.datasets.create",
     "storage.buckets.get",
     "storage.objects.get",
     "storage.objects.list",

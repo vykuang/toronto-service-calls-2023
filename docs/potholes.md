@@ -116,6 +116,8 @@ Summary of problems along the way
 
 ## dbt
 
+### Integration with prefect
+
 [Schedule dbt cloud with prefect](https://medium.com/the-prefect-blog/schedule-orchestrate-dbt-cloud-jobs-with-prefect-b64c3b7f2a02)
 
 - dbt account id: last digits from account settings url
@@ -149,3 +151,11 @@ Summary of problems along the way
   ```
 
 Requires [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)
+
+### Setup
+
+- create service account
+  - need bigquery.datasets.create on a project level
+- commit and sync to branch before running command
+- bigquery has `ROUND(expr, precision)` function
+  - replace CAST()

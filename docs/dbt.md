@@ -21,6 +21,7 @@
     - bq data editor
     - bq job user
     - bq user
+    - **bigquery.datasets.create**
   - permission analysis shows all the excessive permissions so there is opportunity to make it more secure
   - Manage key -> add key -> download json key file
 - Configure project setup on dbt cloud
