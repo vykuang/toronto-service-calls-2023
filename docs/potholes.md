@@ -53,6 +53,8 @@ Summary of problems along the way
   - [`terraform-google-gcloud`](https://registry.terraform.io/modules/terraform-google-modules/gcloud/google/latest) is a terraform wrapper for gcloud
   - useful to programmatically enable `service usage` and `cloud resource manager` API, which are pre-requisites to enabling *other* APIs via terraform
   - those APIs are enabled automatically if a project is created via console
+- `google_bigquery_job` for loading geojson as a table in our dataset
+  - `Error creating Job: googleapi: Error 404: Not found: Dataset`???
 
 ## Transform
 
@@ -180,7 +182,10 @@ Seed the geojson, along with `ward_id_lookup.csv` for dbt generic testing
 
 How to automate loading the geojson as a table in bq?
 
-- save in `data/`
+- save in `data/`, and upload to gcs with terraform
 - use `bq load`
   - part of terraform???
   - converted, newline delimited json to be part of base repo
+  - `bq load` works, but `bigquery_job` does not; cannot find dataset, error 404
+  - loading as external table works, but the format isn't friendly to geojson; data is in nested arrays
+  - might be due to `-target` flag???

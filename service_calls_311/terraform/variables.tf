@@ -47,7 +47,13 @@ variable "prefect_roles" {
         "roles/bigquery.user",
         "roles/secretmanager.secretAccessor",
         "roles/compute.osLogin",
+        # "roles/bigquery.admin",
     ]
+}
+variable "geojson_path" {
+    description = "relative path to newline delimited city wards geojson"
+    type = string
+    default = "../../data/city-wards-boundary-nldelim.geojson"
 }
 variable "agent_permissions" {
   type = set(string)
@@ -74,11 +80,6 @@ variable "gcp_service_list" {
     "secretmanager.googleapis.com"
   ]
   description = "APIs to be enabled in GCP project"
-}
-
-variable "prefect_api_key" {
-    type = string
-    description = "API key to authenticate with remote prefect cloud workspace"
 }
 
 # variable "tf_state_bucket" {

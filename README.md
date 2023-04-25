@@ -75,7 +75,7 @@ TFSTATE_BUCKET=tf-state-service
 
 ```bash
 set -o allexport
-source ./.env
+source ../.env
 set +o allexport
 ```
 
@@ -131,8 +131,9 @@ terraform apply
 #### Prefect
 
 `make_infra.py` must be run on the prefect agent instance so that the credential volume is mounted properly
-  - integrate into terraform as part of instance initiation
-  - `metadata_startup_script` will execute `make_infra.py`
+
+- integrate into terraform as part of instance initiation
+- `metadata_startup_script` will execute `make_infra.py`
 
 #### dbt
 
@@ -144,7 +145,6 @@ Prefect requires these info to orchestrate dbt cloud jobs:
   - create job -> note the integer ID of the URL afte rthe `dbt build` job has been created
 
 Use these two to create `dbt cloud run` block
-
 
 ## data resources
 
