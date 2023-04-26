@@ -144,7 +144,6 @@ terraform apply
 1. Create job with command `dbt build --var="is_test_run:false"`
 1. Schedule the job on a monthly basis, to align with the frequency of the dataset update
 
-
 ## data resources
 
 Full credits to statscan and open data toronto for providing these datasets.
@@ -170,3 +169,4 @@ Full credits to statscan and open data toronto for providing these datasets.
 - 23/4/23 - looker choropleth
 - 23/4/23 - code reproduction
 - 26/4/23 - load geojson with terraform; pivot from dbt orchestration to manual schedule; deploy and run prefect flow
+- 27/4/23 - finetune startup script for VM instances; clean up repository before upload

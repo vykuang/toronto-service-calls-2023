@@ -10,8 +10,8 @@ poetry run prefect deployment build flows/extract_load.py:extract_load_service_c
     -p default-agent-pool \
     -ib docker-container/service-call-infra \
     -sb gcs/service-code-storage \
-    --params='{"bucket_name": "service-data-lake", "dataset_name": "service_calls_models", "year": "2021", "test": "True"}' \
-    --output web-gcs-deployment \
+    --params='{"bucket_name": "service-data-lake", "dataset_name": "service_calls_models", "year": "2020", "overwrite": "True", "test": "True"}' \
+    --output service-pipeline-deployment \
     --apply
 
 # manually starting a run

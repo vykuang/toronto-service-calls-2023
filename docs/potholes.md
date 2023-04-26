@@ -55,6 +55,18 @@ Summary of problems along the way
   - those APIs are enabled automatically if a project is created via console
 - `google_bigquery_job` for loading geojson as a table in our dataset
   - `Error creating Job: googleapi: Error 404: Not found: Dataset`???
+  - need to set location here as well
+
+### startup script woes
+
+- `/etc/environment` accepts only simple assignment, i.e. `VAR=some_value`
+- `/etc/profile.d/<some_file>.sh` accepts `export VAR=some_val`, and will be run on startup
+- both should be acceptable to permanently set environment variables
+- `/etc/environment` works; I only need simple assignments
+- `make_*.py` not able to retrieve environment variables properly
+  - if I SSH in to run them, then it's able to retrieve env vars...
+- `sudo journalctl -u google-startup-scripts.service` to view log output of startup script
+- if I source `/etc/environment`, it's as if I sourced a `.env`; without `export` it doesn't turn become environment, not without a re-login via something called `pam`
 
 ## Transform
 
@@ -116,6 +128,12 @@ Summary of problems along the way
     - `gcloud compute instances describe server --zone us-west1-b | grep natIP | cut -d: -f 2 | tr -d ' '` extracts external IP
   - `prefect config set PREFECT_API_URL="http://<EXTERNAL_IP>:4200/api"` on agent instance, *and* on local dev environment so that we can access the UI
 
+### Authentication in container
+
+How to authenticate the container app running on the compute engine instance? Mount the host instance's `$HOME/.config/gcloud` to the container's. Even if the `google_application_credentials.json` isn't present (because we haven't run `gcloud auth application-default`), that directory provides the permissions granted to the host instance's service account
+
+Seems to use the host instance creds just fine without any volume mount
+
 ## dbt
 
 ### Integration with prefect
@@ -157,11 +175,11 @@ Summary of problems along the way
 - [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)
 - PAID ACCOUNT TO FOR API ACCESS!
   - `prefect_dbt.cloud.exceptions.DbtCloudJobRunTriggerFailed: The API is not accessible to unpaid accounts`
-  
+
 ### PIVOT TO MANUAL
 
 As before, make the cloud dbt env, connect to repo, connect to bigquery, make the job and schedule it, instead of orchestrating via prefect
-  
+
 ### Setup
 
 - create service account
@@ -170,7 +188,6 @@ As before, make the cloud dbt env, connect to repo, connect to bigquery, make th
 - bigquery has `ROUND(expr, precision)` function
   - replace CAST()
 - Seed `ward_id_lookup.csv` for dbt generic testing
-
 
 ## Viz
 
@@ -198,3 +215,4 @@ How to automate loading the geojson as a table in bq?
   - `bq load` works, but `bigquery_job` does not; cannot find dataset, error 404
   - loading as external table works, but the format isn't friendly to geojson; data is in nested arrays
   - might be due to `-target` flag???
+  - add `location = var.region` to specify job location

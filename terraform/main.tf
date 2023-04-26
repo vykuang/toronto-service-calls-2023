@@ -42,7 +42,7 @@ resource "google_bigquery_dataset" "dataset" {
 
 # upload ward.geojson for bq load
 resource "google_storage_bucket_object" "ward-geojson" {
-  name = "code/city_wards.geojson"
+  name   = "code/city_wards.geojson"
   source = var.geojson_path
   bucket = google_storage_bucket.data-lake.name
 }
@@ -50,9 +50,9 @@ resource "google_storage_bucket_object" "ward-geojson" {
 # destination table for geojson
 resource "google_bigquery_table" "ward-geojson" {
   deletion_protection = false
-  dataset_id = google_bigquery_dataset.dataset.dataset_id
-  table_id = "city_wards_map"
-#   depends_on = [google_bigquery_dataset.dataset]
+  dataset_id          = google_bigquery_dataset.dataset.dataset_id
+  table_id            = "city_wards_map"
+  #   depends_on = [google_bigquery_dataset.dataset]
 }
 
 # load geojson from bucket into table
@@ -64,14 +64,14 @@ resource "google_bigquery_job" "load_geojson" {
     ]
 
     destination_table {
-    #   project_id = google_bigquery_table.ward-geojson.project
-    #   dataset_id = google_bigquery_table.ward-geojson.dataset_id
-      table_id =   google_bigquery_table.ward-geojson.id
+      #   project_id = google_bigquery_table.ward-geojson.project
+      #   dataset_id = google_bigquery_table.ward-geojson.dataset_id
+      table_id = google_bigquery_table.ward-geojson.id
     }
     write_disposition = "WRITE_TRUNCATE"
-    autodetect = true
-    source_format = "NEWLINE_DELIMITED_JSON"
-    json_extension = "GEOJSON"
+    autodetect        = true
+    source_format     = "NEWLINE_DELIMITED_JSON"
+    json_extension    = "GEOJSON"
   }
   location = var.region
   depends_on = [
@@ -80,20 +80,7 @@ resource "google_bigquery_job" "load_geojson" {
   ]
 }
 
-# load geojson as external table?
-resource "google_bigquery_table" "load_geojson_ext" {
-  deletion_protection = false
-  dataset_id = google_bigquery_dataset.dataset.dataset_id
-  table_id = "city_wards_map_ext"
-  external_data_configuration {
-    autodetect = true
-    source_format = "NEWLINE_DELIMITED_JSON"
-    # json_extension = "GEOJSON"
-    source_uris = [
-      "gs://${google_storage_bucket_object.ward-geojson.bucket}/${google_storage_bucket_object.ward-geojson.name}"
-    ]
-  }
-}
+
 # define the blank canvas service account
 resource "google_service_account" "service-agent" {
   account_id   = var.service_account_id
@@ -121,16 +108,17 @@ resource "google_bigquery_dataset_iam_member" "service-agent-iam" {
 # still requires a few roles at project level
 resource "google_project_iam_member" "service-agent-iam" {
   for_each = var.prefect_roles
-  project = var.project_id
-  role    = each.key
-  member  = local.sa_member
+  project  = var.project_id
+  role     = each.key
+  member   = local.sa_member
 }
 
 # upload make-infra to bucket
 resource "google_storage_bucket_object" "prefect-block" {
-  name = "code/make_infra.py"
-  source = "../flows/blocks/make_infra.py"
-  bucket = google_storage_bucket.data-lake.name
+  for_each = var.prefect_blocks
+  name     = "code/${each.key}.py"
+  source   = each.value
+  bucket   = google_storage_bucket.data-lake.name
 }
 
 data "google_compute_image" "prefect" {
@@ -174,11 +162,10 @@ resource "google_compute_instance" "server" {
     sudo apt install python3-pip -y
     pip3 install -U pip "prefect==2.8.4"
     sudo chmod 666 /etc/environment
-    sudo echo "export PATH="/home/$USER/.local/bin:$PATH"" >> /etc/environment
-    sudo echo "export EXTERNAL_IP=$(gcloud compute instances describe ${google_compute_instance.server.name} | grep natIP | cut -d: -f 2 | tr -d ' '
+    sudo echo "EXTERNAL_IP=$(gcloud compute instances describe server --zone ${var.zone}| grep natIP | cut -d: -f 2 | tr -d ' ' | tail -n 1)" >> /etc/environment
     source /etc/environment
     sudo chmod 444 /etc/environment
-    touch /etc/startup_was_launched
+    sudo touch /etc/startup_was_launched
     prefect config set PREFECT_UI_API_URL=http://$EXTERNAL_IP:4200/api
     prefect server start --host 0.0.0.0
     SCRIPT
@@ -195,7 +182,7 @@ resource "google_compute_instance" "agent" {
   machine_type = "e2-medium"
   boot_disk {
     initialize_params {
-      size  = 10
+      size  = 20
       type  = "pd-standard"
       image = data.google_compute_image.prefect.self_link
     }
@@ -224,23 +211,26 @@ resource "google_compute_instance" "agent" {
     newgrp docker
     sudo apt install python3-pip -y
     sudo pip3 install -U --no-cache-dir pip
-    sudo pip3 install --no-cache-dir "prefect==2.8.4" prefect-dbt
+    sudo pip3 install --no-cache-dir "prefect==2.8.4"
     sudo chmod 666 /etc/environment
-    sudo echo "export PATH="/home/$USER/.local/bin:$PATH"" >> /etc/environment
-    sudo echo "export TF_VAR_project_id=${var.project_id}" >> /etc/environment
-    sudo echo "export TF_VAR_region=${var.region}" >> /etc/environment
-    sudo echo "export TF_VAR_zone=${var.zone}" >> /etc/environment
-    sudo echo "export TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> /etc/environment
-    sudo echo "export TF_VAR_bq_dataset=${var.bq_dataset}" >> /etc/environment
-    source /etc/environment
+    sudo echo "PREFECT_API_URL=http://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}:4200/api" >> /etc/environment
+    sudo echo "TF_VAR_project_id=${var.project_id}" >> /etc/environment
+    sudo echo "TF_VAR_region=${var.region}" >> /etc/environment
+    sudo echo "TF_VAR_zone=${var.zone}" >> /etc/environment
+    sudo echo "TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> /etc/environment
+    sudo echo "TF_VAR_bq_dataset=${var.bq_dataset}" >> /etc/environment
+    set -o allexport
+    . /etc/environment
+    set +a allexport
     sudo chmod 444 /etc/environment
-    prefect config set PREFECT_API_URL="http://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}:4200/api"
+    prefect config set PREFECT_API_URL=$PREFECT_API_URL
     # make_infra
-    mkdir /code && cd /code
-    gsutil cp ${google_storage_bucket.data-lake.url}/code/make_infra.py make_infra.py
+    mkdir code && cd code
+    gsutil cp ${google_storage_bucket.data-lake.url}/code/make_*.py .
     python3 make_infra.py
+    python3 make_gcs_sb.py
     # create flag to indicate instance has been launched before
-    touch /etc/startup_was_launched
+    sudo touch /etc/startup_was_launched
     prefect agent start -q service-calls
     SCRIPT
   network_interface {

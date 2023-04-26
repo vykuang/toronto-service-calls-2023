@@ -52,3 +52,6 @@ terraform/
 # poetry
 *.lock
 *.toml
+
+# prefect artifact
+blocks/

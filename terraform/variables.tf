@@ -41,19 +41,27 @@ variable "service_account_name" {
 }
 # not req'd if we're defining the specific permissions
 variable "prefect_roles" {
-    description = "list of roles assigned to the executor service account"
-    type = set(string)
-    default = [
-        "roles/bigquery.user",
-        "roles/secretmanager.secretAccessor",
-        "roles/compute.osLogin",
-        # "roles/bigquery.admin",
-    ]
+  description = "list of roles assigned to the executor service account"
+  type        = set(string)
+  default = [
+    "roles/bigquery.user",
+    # "roles/secretmanager.secretAccessor",
+    "roles/compute.osLogin",
+    # "roles/bigquery.admin",
+  ]
+}
+variable "prefect_blocks" {
+  description = "list of prefect blocks to create"
+  type        = map(any)
+  default = {
+    "make_infra"  = "../service_calls_311/flows/blocks/make_infra.py"
+    "make_gcs_sb" = "../service_calls_311/flows/blocks/make_gcs_sb.py"
+  }
 }
 variable "geojson_path" {
-    description = "relative path to newline delimited city wards geojson"
-    type = string
-    default = "../data/city-wards-boundary-nldelim.geojson"
+  description = "relative path to newline delimited city wards geojson"
+  type        = string
+  default     = "../data/city-wards-boundary-nldelim.geojson"
 }
 variable "agent_permissions" {
   type = set(string)
