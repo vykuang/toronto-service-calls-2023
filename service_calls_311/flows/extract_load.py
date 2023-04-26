@@ -347,7 +347,6 @@ def load(src_uris: str, dataset_name: str, year: str):
     load_job = load_bigquery(src_uris, dest_table)
     return load_job
 
-
 @flow
 def extract_load_service_calls(
     bucket_name: str,
@@ -388,6 +387,7 @@ def extract_load_service_calls(
         test=test,
     )
     load_job = load(src_uris=gs_pq_path, dataset_name=dataset_name, year=year)
+    transform_dbt()
 
 
 if __name__ == "__main__":

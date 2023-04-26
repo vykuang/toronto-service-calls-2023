@@ -137,14 +137,13 @@ terraform apply
 
 #### dbt
 
-Prefect requires these info to orchestrate dbt cloud jobs:
+1. Clone the dbt models repository
+1. Create cloud dbt account
+1. Connect to the bigquery dataset created from terraform
+1. Connect to the dbt models repository
+1. Create job with command `dbt build --var="is_test_run:false"`
+1. Schedule the job on a monthly basis, to align with the frequency of the dataset update
 
-- account API
-  - dbt account info -> API -> reveal API
-- job number
-  - create job -> note the integer ID of the URL afte rthe `dbt build` job has been created
-
-Use these two to create `dbt cloud run` block
 
 ## data resources
 
@@ -169,4 +168,5 @@ Full credits to statscan and open data toronto for providing these datasets.
 - 23/4/10 - dockerize the prefect service agent
 - 23/4/22 - convert spark to bigquery sql
 - 23/4/23 - looker choropleth
-- 23/4/24 - code reproduction
+- 23/4/23 - code reproduction
+- 26/4/23 - load geojson with terraform; pivot from dbt orchestration to manual schedule; deploy and run prefect flow

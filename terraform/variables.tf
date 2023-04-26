@@ -53,7 +53,7 @@ variable "prefect_roles" {
 variable "geojson_path" {
     description = "relative path to newline delimited city wards geojson"
     type = string
-    default = "../../data/city-wards-boundary-nldelim.geojson"
+    default = "../data/city-wards-boundary-nldelim.geojson"
 }
 variable "agent_permissions" {
   type = set(string)

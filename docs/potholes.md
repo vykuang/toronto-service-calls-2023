@@ -152,8 +152,16 @@ Summary of problems along the way
       run_dbt_job_flow()
   ```
 
-Requires [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)
+### Requirements
 
+- [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)
+- PAID ACCOUNT TO FOR API ACCESS!
+  - `prefect_dbt.cloud.exceptions.DbtCloudJobRunTriggerFailed: The API is not accessible to unpaid accounts`
+  
+### PIVOT TO MANUAL
+
+As before, make the cloud dbt env, connect to repo, connect to bigquery, make the job and schedule it, instead of orchestrating via prefect
+  
 ### Setup
 
 - create service account
@@ -162,6 +170,7 @@ Requires [`prefect-dbt`](https://github.com/PrefectHQ/prefect-dbt)
 - bigquery has `ROUND(expr, precision)` function
   - replace CAST()
 - Seed `ward_id_lookup.csv` for dbt generic testing
+
 
 ## Viz
 

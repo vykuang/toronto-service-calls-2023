@@ -51,13 +51,13 @@ resource "google_storage_bucket_object" "ward-geojson" {
 resource "google_bigquery_table" "ward-geojson" {
   deletion_protection = false
   dataset_id = google_bigquery_dataset.dataset.dataset_id
-  table_id = "city_wards_map_test"
+  table_id = "city_wards_map"
 #   depends_on = [google_bigquery_dataset.dataset]
 }
 
 # load geojson from bucket into table
 resource "google_bigquery_job" "load_geojson" {
-  job_id = "load_wards_geojson"
+  job_id = "load_wards_geojson_${formatdate("YYYYMMDD_hhmmss", timestamp())}"
   load {
     source_uris = [
       "gs://${google_storage_bucket_object.ward-geojson.bucket}/${google_storage_bucket_object.ward-geojson.name}"
@@ -73,6 +73,7 @@ resource "google_bigquery_job" "load_geojson" {
     source_format = "NEWLINE_DELIMITED_JSON"
     json_extension = "GEOJSON"
   }
+  location = var.region
   depends_on = [
     google_storage_bucket_object.ward-geojson,
     google_bigquery_table.ward-geojson,
