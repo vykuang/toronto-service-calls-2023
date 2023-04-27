@@ -18,7 +18,7 @@ description: |-
       if true, overwrite existing parquet/dataset
   test: bool
       if true, load only a small subset onto bigquery
-version: 31ef3b320b6a912aa40469715153fcb7
+version: edea261d17309a8077ec440451b95fdc
 # The work queue that will handle this deployment's runs
 work_queue_name: service-calls
 work_pool_name: default-agent-pool
@@ -26,11 +26,14 @@ tags: []
 parameters:
   bucket_name: service-data-lake
   dataset_name: service_calls_models
-  year: '2020'
+  year: '2023'
   overwrite: 'True'
-  test: 'True'
-schedule: null
-is_schedule_active: null
+  test: 'False'
+schedule:
+  cron: 0 0 1 * *
+  timezone: null
+  day_or: true
+is_schedule_active: true
 infra_overrides: {}
 
 ###
@@ -107,4 +110,4 @@ parameter_openapi_schema:
   - dataset_name
   - year
   definitions: null
-timestamp: '2023-04-26T18:53:50.891819+00:00'
+timestamp: '2023-04-27T03:50:26.342385+00:00'
