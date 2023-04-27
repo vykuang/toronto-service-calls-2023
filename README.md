@@ -16,6 +16,8 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 ## Data visualization
 
+[Link to Looker dashboard](https://lookerstudio.google.com/reporting/fb6bd9a4-9efc-4999-bd81-d850dd25e51d)
+
 ![looker visualization](img/looker-screen.png)
 
 ## Project architecture
@@ -36,7 +38,7 @@ Besides finding the area with the most noise complaints, this project is an exer
 - transform: dbt
   - models the raw datasets that have been loaded onto bigquery
   - documentation
-  - tests
+  - tests for schema drift
 - orchestration: Prefect
   - facilitates monthly refresh: pull, process, store models
   - monitoring and logging
@@ -54,20 +56,26 @@ Besides finding the area with the most noise complaints, this project is an exer
 
 ## Run it yourself!
 
-Clone this repo to start
+Clone this repo to start: `git clone https://github.com/vykuang/toronto-service-calls-2023.git`
 
-### GCP
+### 0 Setup
 
-Create project:
+Local requirements:
 
-- via console, or
-- via `gcloud projects create <PROJECT_ID>`
+- gcloud - local credential should have enough permissions to create all necessary cloud resources on GCP, e.g. owner
+- gsutil
+- terraform
+- prefect
 
-The `PROJECT_ID` can be anything, but the default as specified in `variables.tf` is `service-calls-pipeline`; if you choose different, make sure they match.
+### 1 GCP
+
+Create project via console
+
+Note the `PROJECT_ID`; will need to assign in `user.env`
 
 To use any resource, the new project must be linked to a billing account. In console nav menu, go to Billing > Link to billing account. Default should be called `My Billing Account` if on free trial
 
-### Env vars
+### 2 Set Environment variables
 
 Once a variable is defined, terraform can accept environment variables by searching for `TF_VAR_<VAR_NAME>`. E.g. if we have `var.project_id`, we can export `TF_VARS_project_id=my-first-project` and `terraform plan` will populate the variable correctly.
 
@@ -75,13 +83,16 @@ With a key/value pair list in `user.env`, export all of them in a script:
 
 ```bash
 # default user.env file
+
 TF_VAR_project_id= # fill here after creating project #
-TF_VAR_region=us-west1
+TF_VAR_region=us-west1  # change any of these to your liking
 TF_VAR_zone=us-west1-b
 TF_VAR_data_lake_bucket=service-data-lake
 TF_VAR_bq_dataset=service_calls_models
 TFSTATE_BUCKET=tf-state-service
 ```
+
+Run this blurb to export `user.env` to environment
 
 ```bash
 set -o allexport
@@ -89,7 +100,7 @@ source user.env
 set +o allexport
 ```
 
-### Terraform
+### 3 Terraform
 
 - Create bucket for terraform backend and initialize
 - Creates resources for the project
@@ -124,15 +135,7 @@ terraform apply
 
 View prefect server UI after creation completes at http://{server-external-IP}:4200
 
-### Prefect
-
-Deploy the flow; scheduled to run on 1st of every month
-
-```sh
-cd service_calls_311 && ./deploy.sh
-```
-
-### dbt
+### 4 dbt
 
 1. Clone the dbt models repository - `git clone https://github.com/vykuang/dbt-service-calls.git`
 1. Create cloud dbt account
@@ -143,6 +146,23 @@ cd service_calls_311 && ./deploy.sh
 1. run `dbt dept` and `dbt seed`
 1. Create job with command `dbt build --var="is_test_run:false"`
 1. Schedule the job on a monthly basis, to align with the frequency of the dataset update
+
+### 5 Prefect
+
+Deploy the flow; scheduled to run on 1st of every month
+
+```sh
+cd service_calls_311 && ./deploy.sh
+```
+
+### \[optional\] docker
+
+The infrastructure to run the extract and load flows is dockerized; the `make_infra.py` block automatically pulls from a public docker hub that's been built from the local `Dockerfile`. However if you want to build your own:
+
+1. from repo root: `docker build -t docker_hub_image_name:tag .`
+1. push to public container repo: `docker push docker_hub_image_name:tag`
+   - you may need to configure docker login first
+1. change `image=docker_hub_image_name:tag` in `make_infra.py`, inside `infra_block`.
 
 ## data resources
 
@@ -160,4 +180,4 @@ Full credits to statscan and open data toronto for providing these datasets.
 - data ingestion - extract and load subflows; intermediate storage in GCS
 - data warehouse - bigquery, partition by datetime, cluster by ward and service type
 - transformations - dbt
-- dashboard - looker with choropleth
+- dashboard - looker with choropleth and ward ranking by request type
