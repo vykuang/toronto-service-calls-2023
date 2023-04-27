@@ -2,7 +2,7 @@
 .ipynb_checkpoints
 .env
 .vscode/
-
+!user.env
 # pytest
 .pytest_cache/
 __pycache__/
@@ -17,6 +17,10 @@ data/notebooks/
 *.zip
 *.parquet
 prefect-test/
+
+# dev
+notebooks/
+docs/
 
 # terraform artifacts
 .terraform

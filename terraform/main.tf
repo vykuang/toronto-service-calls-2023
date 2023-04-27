@@ -147,7 +147,7 @@ resource "google_compute_instance" "server" {
 
   }
   network_interface {
-    network = "default"
+    network = var.gcp_network_name
     access_config {
       network_tier = "STANDARD"
 
@@ -234,7 +234,7 @@ resource "google_compute_instance" "agent" {
     prefect agent start -q service-calls
     SCRIPT
   network_interface {
-    network = "default"
+    network = var.gcp_network_name
     access_config {
       network_tier = "STANDARD"
 
@@ -249,4 +249,20 @@ resource "google_compute_instance" "agent" {
     google_compute_instance.server,
     google_storage_bucket_object.prefect-block
   ]
+}
+resource "google_compute_firewall" "prefect-ui" {
+  project = var.project_id
+  name = "prefect-ui"
+  network = var.gcp_network_name
+  description = "allows access to prefect server UI"
+  allow {
+    protocol = "tcp"
+    ports = ["4200-4300"]
+  }
+  allow {
+    protocol = "udp"
+    ports = ["4200-4300"]
+  }
+  direction = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
 }

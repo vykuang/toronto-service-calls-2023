@@ -68,6 +68,17 @@ Summary of problems along the way
 - `sudo journalctl -u google-startup-scripts.service` to view log output of startup script
 - if I source `/etc/environment`, it's as if I sourced a `.env`; without `export` it doesn't turn become environment, not without a re-login via something called `pam`
 
+### Firewall rules
+
+- Need to add a rule to `server` instance to allow 0.0.0.0/0 on port 4200 for TCP/UDP ingress
+- `gcloud compute firewall-rules list` lists all rules
+- firewall *policy* refers to a folder/org-wide policy, which freetier accounts do not have access to
+
+Use `resource "google_compute_firewall"`
+
+- name: for this particular rule
+- network: `default` will apply to the existing default network
+
 ## Transform
 
 - parquet files loaded from GCS do not need schema specification, even though docs may suggest otherwise
@@ -132,7 +143,7 @@ Summary of problems along the way
 
 How to authenticate the container app running on the compute engine instance? Mount the host instance's `$HOME/.config/gcloud` to the container's. Even if the `google_application_credentials.json` isn't present (because we haven't run `gcloud auth application-default`), that directory provides the permissions granted to the host instance's service account
 
-Seems to use the host instance creds just fine without any volume mount
+Seems to use the host instance creds just fine without any volume mount. In theory this always made more sense, but I was stuck on the idea of the container itself needing the `key.json` or some sort of credential directory
 
 ## dbt
 
@@ -202,7 +213,7 @@ left join city_wards_map m
 on r.ward_name = m.AREA_NAME
 ```
 
-Seed the geojson, along with `ward_id_lookup.csv` for dbt generic testing
+Seed `ward_id_lookup.csv` for dbt generic testing; include in the `dbt` repo for `git clone`
 
 ### geojson
 

@@ -19,7 +19,7 @@ block_name = "service-call-infra"
 # gcp_dir = "/home/ubuntu/.config/gcloud"
 infra_block = DockerContainer(
     name=block_name,
-    image="vykuang/service-calls:base-pip-v2",
+    image="vykuang/service-calls:prod-latest",
     env={
         "TF_VAR_project_id": GOOGLE_CLOUD_PROJECT,
         "TF_VAR_region": LOCATION,
@@ -30,9 +30,6 @@ infra_block = DockerContainer(
     },
     image_pull_policy="ALWAYS",
     auto_remove=False,
-    # volumes=[
-    #     f"{HOME}/.config/gcloud:{gcp_dir}",
-    # ],
 )
 
 infra_block.save(
