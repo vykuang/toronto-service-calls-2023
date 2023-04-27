@@ -13,6 +13,7 @@ __pycache__/
 
 # test data files
 data/notebooks/
+data/lib
 *.csv
 *.zip
 *.parquet
