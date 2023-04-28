@@ -2,6 +2,23 @@
 
 This is a visualization of the service calls initiated by Toronto citizens. The choropleth map is broken down into the resident's ward, as well as the types of requests being made. The result is a heatmap of the types of service requests fulfilled for each neighborhood in Toronto.
 
+- [Data engineering zoomcamp - 311 Service Calls](#data-engineering-zoomcamp---311-service-calls)
+  - [Motivation](#motivation)
+  - [Data visualization](#data-visualization)
+  - [Project architecture](#project-architecture)
+  - [Run it yourself](#run-it-yourself)
+    - [0 Setup](#0-setup)
+    - [1 GCP](#1-gcp)
+    - [2 Set Environment variables](#2-set-environment-variables)
+    - [3 Terraform](#3-terraform)
+    - [4 dbt](#4-dbt)
+    - [5 Prefect](#5-prefect)
+    - [\[optional\] docker](#--optional---docker)
+  - [data resources](#data-resources)
+  - [Peer Review Criteria](#peer-review-criteria)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 ## Motivation
 
 Besides finding the area with the most noise complaints, this project is an exercise in implementing a data pipeline that incorporates reliability, traceability, and resiliency. Concretely speaking, a pipeline following those principles should have these characteristics:
@@ -54,7 +71,7 @@ Besides finding the area with the most noise complaints, this project is an exer
   - gcs bucket
   - bigquery dataset
 
-## Run it yourself!
+## Run it yourself
 
 Clone this repo to start: `git clone https://github.com/vykuang/toronto-service-calls-2023.git`
 
@@ -92,7 +109,7 @@ TF_VAR_bq_dataset=service_calls_models
 TFSTATE_BUCKET=tf-state-service
 ```
 
-Run this blurb to export `user.env` to environment
+Run this blurb in repo root to export `user.env` to environment
 
 ```bash
 set -o allexport
@@ -137,7 +154,7 @@ View prefect server UI after creation completes at http://{server-external-IP}:4
 
 ### 4 dbt
 
-1. Clone the dbt models repository - `git clone https://github.com/vykuang/dbt-service-calls.git`
+1. Fork and then clone the base dbt models repository - `git fork https://github.com/vykuang/dbt-service-calls.git`
 1. Create cloud dbt account
 1. Connect to the bigquery dataset created from terraform
    - will need to download the service account json key from cloud console for upload
