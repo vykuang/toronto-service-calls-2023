@@ -55,3 +55,5 @@ Orchestrating cloud dbt via API requires paid accounts.
 ## Poverty dbt
 
 Schedule the job on the UI instead of via prefect
+
+Think about migrating to dbt-core...

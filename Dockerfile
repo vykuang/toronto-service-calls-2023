@@ -1,10 +1,11 @@
 FROM prefecthq/prefect:2.8.4-python3.10
-RUN pip install -U pip poetry
+RUN apt-get update && apt-get install
+RUN pip install -U pip
 
 WORKDIR /service
 
-COPY poetry.lock pyproject.toml ./
-RUN poetry export --only main -f requirements.txt -o requirements.txt
+COPY requirements.txt ./
+# RUN poetry export --only main -f requirements.txt -o requirements.txt
 RUN pip install --no-cache-dir --no-input --no-deps -r requirements.txt
 
 WORKDIR /opt/prefect
