@@ -20,8 +20,6 @@ data/lib
 prefect-test/
 
 # dev
-notebooks/
-docs/
 
 # terraform artifacts
 .terraform
