@@ -145,16 +145,19 @@ terraform apply
 `terraform apply` will create:
 
 - GCS bucket
-- bq dataset
-- GCE instance, `server`, to orchestrate prefect flow
-- GCE instance, `agent`, to execute prefect flow
+- bigquery dataset
+- GCE e2-micro instances:
+  - `server` orchestrates prefect flow
+    - start-up script installs prefect, and runs prefect server
+  - `agent` executes prefect flow
+    - start-up script installs docker, prefect, creates prefect blocks, and runs prefect agent
 - service account with permissions to access the above resources
 
-View prefect server UI after creation completes at http://{server-external-IP}:4200
+View prefect server UI after creation completes at http://{server-external-IP}:4200; check that the prefect blocks for GCS storage and docker infra have been created correctly
 
 ### 4 dbt
 
-1. Fork and then clone the base dbt models repository - `git fork https://github.com/vykuang/dbt-service-calls.git`
+1. Fork the base dbt models repository - `https://github.com/vykuang/dbt-service-calls.git`
 1. Create cloud dbt account
 1. Connect to the bigquery dataset created from terraform
    - will need to download the service account json key from cloud console for upload
@@ -198,3 +201,10 @@ Full credits to statscan and open data toronto for providing these datasets.
 - data warehouse - bigquery, partition by datetime, cluster by ward and service type
 - transformations - dbt
 - dashboard - looker with choropleth and ward ranking by request type
+
+## Notes for improvements
+
+- move to dbt-core so that it can be orchestrated by prefect
+  - dbt cloud *can* be orchestrated, but API access requires paid accounts
+- tests for the `extract_load` flow
+- migrate the executor to cloud run so that resources are used only when a flow deployment is active, instead of continuously running a GCE instance
