@@ -197,3 +197,4 @@ How to automate loading the geojson as a table in bq?
   - `bq load` works, but `bigquery_job` does not; cannot find dataset, error 404
   - loading as external table works, but the format isn't friendly to geojson; data is in nested arrays
   - might be due to `-target` flag???
+  - set location in job resource block

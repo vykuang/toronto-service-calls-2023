@@ -52,7 +52,7 @@ Orchestrating cloud dbt via API requires paid accounts.
    - job ID: deploy -> jobs -> digits after `jobs/` in URL; only available after job has been created in UI
 1. Create prefect block `dbt cloud credentials` with API key and account ID; use `dbt-service-cred` for block name
 
-## Poverty dbt
+## dbt core
 
 Schedule the job on the UI instead of via prefect
 
@@ -71,3 +71,20 @@ Think about migrating to dbt-core...
     - cast as int: `"{{ env_var('DBT_THREADS') | int }}"`
     - use default: `+materialized: "{{ env_var('DBT_MATERIALIZATION', 'view') }}"`
   - if profile authentication (e.g. service key) is not set properly, `dbt debug` returns `profile not found` error
+
+### docs
+
+`dbt docs generate` creates `target/catalog.json`; `dbt docs serve` hosts a local website that displays the docs, meant for local dev
+
+Production grade docs means hosting the info remotely on cloud storage. Site is *static*.
+
+- [dbt docs docs](https://docs.getdbt.com/docs/collaborate/documentation#deploying-the-documentation-site)
+- [hosting static website on gcs](https://cloud.google.com/storage/docs/hosting-static-website)
+
+### Orchestration
+
+[prefect-dbt docs](https://prefecthq.github.io/prefect-dbt/#integrate-dbt-core-cli-commands-with-prefect-flows)
+
+Requires `project_dir` and `profiles_dir` to be set, defined as either a prefect block
+
+Basically triggers the bash `dbt` commands to run
