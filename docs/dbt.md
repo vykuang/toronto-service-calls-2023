@@ -58,3 +58,16 @@ Schedule the job on the UI instead of via prefect
 
 Think about migrating to dbt-core...
 
+### profiles.yml
+
+- Local dbt requires a `~/.dbt/profiles.yml` which is outside of all dbt project repos
+- It defines all the profiles that can be used within each project specific `dbt_project.yml` that *is* inside a dbt project repo
+- Each profile specifies the connection info, e.g. to bigquery, or postgres
+  - typically one profile for each type of data warehouse
+  - may contain sensitive credential materials
+  - optionally populate with environment variables
+    - `password: "{{ env_var('DBT_PASSWORD') }}"`
+    - raise compilation error if env var not found
+    - cast as int: `"{{ env_var('DBT_THREADS') | int }}"`
+    - use default: `+materialized: "{{ env_var('DBT_MATERIALIZATION', 'view') }}"`
+  - if profile authentication (e.g. service key) is not set properly, `dbt debug` returns `profile not found` error

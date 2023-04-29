@@ -10,3 +10,6 @@ export_reqs:
 
 build_dev: quality_checks export_reqs
 	docker build -t vykuang/service-calls:dev-${LOCAL_TAG} .
+
+build_prod: quality_checks export_reqs
+	docker build -t vykuang/service-calls:prod-latest
