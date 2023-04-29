@@ -52,7 +52,6 @@ resource "google_bigquery_table" "ward-geojson" {
   deletion_protection = false
   dataset_id          = google_bigquery_dataset.dataset.dataset_id
   table_id            = "city_wards_map"
-  #   depends_on = [google_bigquery_dataset.dataset]
 }
 
 # load geojson from bucket into table
@@ -92,6 +91,7 @@ resource "google_service_account" "service-agent" {
 locals {
   sa_member = "serviceAccount:${google_service_account.service-agent.email}"
 }
+# resource-specific roles
 # assign the bucket role to our service account
 resource "google_storage_bucket_iam_member" "service-agent-iam" {
   bucket = google_storage_bucket.data-lake.name
@@ -113,7 +113,7 @@ resource "google_project_iam_member" "service-agent-iam" {
   member   = local.sa_member
 }
 
-# upload make-infra to bucket
+# upload prefect blocks to bucket for later execution
 resource "google_storage_bucket_object" "prefect-block" {
   for_each = var.prefect_blocks
   name     = "code/${each.key}.py"
@@ -137,7 +137,7 @@ resource "time_sleep" "wait_service_enable" {
 # orchestration server
 resource "google_compute_instance" "server" {
   name         = "server"
-  machine_type = "e2-medium"
+  machine_type = "e2-micro"
   boot_disk {
     initialize_params {
       size  = 10
@@ -179,7 +179,7 @@ resource "google_compute_instance" "server" {
 # prefect execution agent
 resource "google_compute_instance" "agent" {
   name         = "agent"
-  machine_type = "e2-medium"
+  machine_type = "e2-micro"
   boot_disk {
     initialize_params {
       size  = 20
@@ -250,6 +250,7 @@ resource "google_compute_instance" "agent" {
     google_storage_bucket_object.prefect-block
   ]
 }
+# amend firewall rule to allow prefect UI access at port 4200
 resource "google_compute_firewall" "prefect-ui" {
   project = var.project_id
   name = "prefect-ui"
@@ -257,11 +258,11 @@ resource "google_compute_firewall" "prefect-ui" {
   description = "allows access to prefect server UI"
   allow {
     protocol = "tcp"
-    ports = ["4200-4300"]
+    ports = ["4200"]
   }
   allow {
     protocol = "udp"
-    ports = ["4200-4300"]
+    ports = ["4200"]
   }
   direction = "INGRESS"
   source_ranges = ["0.0.0.0/0"]

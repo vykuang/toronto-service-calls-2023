@@ -52,6 +52,8 @@ Orchestrating cloud dbt via API requires paid accounts.
    - job ID: deploy -> jobs -> digits after `jobs/` in URL; only available after job has been created in UI
 1. Create prefect block `dbt cloud credentials` with API key and account ID; use `dbt-service-cred` for block name
 
-## Poverty dbt
+## dbt core
 
 Schedule the job on the UI instead of via prefect
+
+Think about migrating to dbt-core...
