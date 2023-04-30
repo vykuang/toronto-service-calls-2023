@@ -266,4 +266,5 @@ resource "google_compute_firewall" "prefect-ui" {
   }
   direction = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
+  depends_on = [google_project_service.services["compute.googleapis.com"]]
 }
