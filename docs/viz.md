@@ -19,7 +19,7 @@ Let's focus on the choropleth:
 
 Charts how the requests pile up
 
-- use the facts table as basisfor their `creation_datetime`
+- use the facts table as basis for their `creation_datetime`
 - subtotal count for each day
 
 ## Requests by ward

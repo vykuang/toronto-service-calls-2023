@@ -92,11 +92,19 @@ Note the `PROJECT_ID`; will need to assign in `user.env`
 
 To use any resource, the new project must be linked to a billing account. In console nav menu, go to Billing > Link to billing account. Default should be called `My Billing Account` if on free trial
 
-### 2 Set Environment variables
+After creating project, create application default credential for terraform:
+
+```bash
+PROJECT_ID=[YOUR_PROJECT_ID]
+gcloud auth application-default login --project=$PROJECT_ID
+gcloud config set project $PROJECT_ID
+```
+
+### 2 Set Environment variables in user.env
 
 Once a variable is defined, terraform can accept environment variables by searching for `TF_VAR_<VAR_NAME>`. E.g. if we have `var.project_id`, we can export `TF_VARS_project_id=my-first-project` and `terraform plan` will populate the variable correctly.
 
-With a key/value pair list in `user.env`, export all of them in a script:
+Default `user.env` to be filled in:
 
 ```bash
 # default user.env file
@@ -109,11 +117,11 @@ TF_VAR_bq_dataset=service_calls_models
 TFSTATE_BUCKET=tf-state-service
 ```
 
-Run this blurb in repo root to export `user.env` to environment
+After filling in `TF_VAR_project_id`, run this blurb in project root to export `user.env` to environment
 
 ```bash
 set -o allexport
-source user.env
+. user.env
 set +o allexport
 ```
 
@@ -133,7 +141,7 @@ gsutil mb \
 --pap enforced \
 gs://$TFSTATE_BUCKET
 # turn on versioning
-gsutil versioning set on gs://$TF_VAR_data_lake_bucket
+gsutil versioning set on gs://$TFSTATE_BUCKET
 # may have to add -migrate-state option if there is existing tfstate
 terraform init \
 -backend-config="bucket=$TFSTATE_BUCKET" \
@@ -146,34 +154,38 @@ terraform apply
 
 - GCS bucket
 - bigquery dataset
-- GCE e2-micro instances:
+- GCE e2-medium instances:
   - `server` orchestrates prefect flow
     - start-up script installs prefect, and runs prefect server
   - `agent` executes prefect flow
     - start-up script installs docker, prefect, creates prefect blocks, and runs prefect agent
+  - instance type: `e2-medium`; anything less have not been able to run prefect server/agent in my experience
+    - *this is beyond free tier eligibility and will incur costs*
 - service account with permissions to access the above resources
 
-View prefect server UI after creation completes at http://{server-external-IP}:4200; check that the prefect blocks for GCS storage and docker infra have been created correctly
+View prefect server UI after creation completes at `http://{server-external-IP}:4200`; check that the prefect blocks for GCS storage and docker infra have been created correctly
 
-### 4 dbt
+### 4 Prefect
+
+Deploy the flow; scheduled to run on 1st of every month
+
+```sh
+PREFECT_SERVER_HOST=$(gcloud compute instances describe server --zone $TF_VAR_zone| grep natIP | cut -d: -f 2 | tr -d ' ' | tail -n 1)
+export PREFECT_API_URL=http://$PREFECT_SERVER_HOST:4200/api
+cd service_calls_311 && ./deploy.py --apply --run
+```
+
+### 5 dbt
 
 1. Fork the base dbt models repository - `https://github.com/vykuang/dbt-service-calls.git`
 1. Create cloud dbt account
 1. Connect to the bigquery dataset created from terraform
    - will need to download the service account json key from cloud console for upload
-1. Connect to the dbt models repository
+1. Connect to your forked dbt models repository
 1. Replace the `project_id` vars in `dbt_project.yml` and the `sources: database` value in `models/staging/schema.yml`
 1. run `dbt dept` and `dbt seed`
 1. Create job with command `dbt build --var="is_test_run:false"`
 1. Schedule the job on a monthly basis, to align with the frequency of the dataset update
-
-### 5 Prefect
-
-Deploy the flow; scheduled to run on 1st of every month
-
-```sh
-cd service_calls_311 && ./deploy.sh
-```
 
 ### \[optional\] docker
 
@@ -206,5 +218,8 @@ Full credits to statscan and open data toronto for providing these datasets.
 
 - move to dbt-core so that it can be orchestrated by prefect
   - dbt cloud *can* be orchestrated, but API access requires paid accounts
+  - host dbt-core's documentations on GCS as [static website](https://cloud.google.com/storage/docs/hosting-static-website)
 - tests for the `extract_load` flow
 - migrate the executor to cloud run so that resources are used only when a flow deployment is active, instead of continuously running a GCE instance
+- integrate GCP's artifacts registry and cloud build to create a private docker repository that only the service account may retrieve
+- promote the GCE ephemeral IP to permanent

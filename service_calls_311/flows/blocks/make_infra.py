@@ -1,8 +1,6 @@
 """
 Creates the prefect block via code
 Easier to set env vars for the container rather than UI
-Run this script on the prefect agent instance so that $HOME gets
-the correct directory to mount the credential file
 """
 from prefect.infrastructure.docker import DockerContainer
 

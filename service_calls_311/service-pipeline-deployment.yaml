@@ -2,38 +2,27 @@
 ### A complete description of a Prefect Deployment for flow 'extract-load-service-calls'
 ###
 name: extract-load
-description: |-
-  "
-  Extracts CSV as parquets and loads into bigquery dataset
-
-  Parameters
-  ----------
-  bucket_name: str
-      name of bucket in GCS
-  dataset_name: str
-      name of dataset in bigquery
-  year: str
-      year for which to extract the service call request records
-  overwrite: bool
-      if true, overwrite existing parquet/dataset
-  test: bool
-      if true, load only a small subset onto bigquery
-version: edea261d17309a8077ec440451b95fdc
+description: "\"\nExtracts CSV as parquets and loads into bigquery dataset\n\nParameters\n\
+  ----------\nbucket_name: str\n    name of bucket in GCS\ndataset_name: str\n   \
+  \ name of dataset in bigquery\nyear: str\n    year for which to extract the service\
+  \ call request records\noverwrite: bool\n    if true, overwrite existing parquet/dataset\n\
+  test: bool\n    if true, load only a small subset onto bigquery"
+version: d0e86ba9c9576c1d89c00d5dc7a425c1
 # The work queue that will handle this deployment's runs
 work_queue_name: service-calls
-work_pool_name: default-agent-pool
+work_pool_name: null
 tags: []
 parameters:
-  bucket_name: service-data-lake
+  bucket_name: service-data-lake-564
   dataset_name: service_calls_models
-  year: '2023'
-  overwrite: 'True'
-  test: 'False'
+  year: 2023
+  overwrite: true
+  test: false
 schedule:
   cron: 0 0 1 * *
   timezone: null
   day_or: true
-is_schedule_active: true
+is_schedule_active: null
 infra_overrides: {}
 
 ###
@@ -44,15 +33,15 @@ manifest_path: null
 infrastructure:
   type: docker-container
   env:
-    TF_VAR_project_id: service-calls-pipeline-382901
+    TF_VAR_project_id: service-calls-dev
     TF_VAR_region: us-west1
-    TF_VAR_data_lake_bucket: service-data-lake
+    TF_VAR_data_lake_bucket: service-data-lake-564
     TF_VAR_bq_dataset: service_calls_models
-    GOOGLE_CLOUD_PROJECT: service-calls-pipeline-382901
+    GOOGLE_CLOUD_PROJECT: service-calls-dev
   labels: {}
   name: service-call-infra
   command: null
-  image: vykuang/service-calls:base-pip-v2
+  image: vykuang/service-calls:prod-latest
   image_pull_policy: ALWAYS
   image_registry: null
   networks: []
@@ -63,21 +52,21 @@ infrastructure:
   memswap_limit: null
   mem_limit: null
   privileged: false
-  _block_document_id: c2601ee4-9b92-4dce-b352-a7b435d0b8d9
+  _block_document_id: 5f6051e5-63ac-49fb-b06b-d8894bebab2e
   _block_document_name: service-call-infra
   _is_anonymous: false
   block_type_slug: docker-container
   _block_type_slug: docker-container
 storage:
-  bucket_path: service-data-lake/code/
+  bucket_path: service-data-lake-564/code/
   service_account_info: null
-  project: service-calls-pipeline-382901
-  _block_document_id: 2add6924-d4ea-4ec2-95ec-12466513cb6a
+  project: service-calls-dev
+  _block_document_id: 9f321401-408c-4f36-afbb-b3d91e7e91dc
   _block_document_name: service-code-storage
   _is_anonymous: false
   block_type_slug: gcs
   _block_type_slug: gcs
-path: ''
+path: null
 entrypoint: flows/extract_load.py:extract_load_service_calls
 parameter_openapi_schema:
   title: Parameters
@@ -110,4 +99,4 @@ parameter_openapi_schema:
   - dataset_name
   - year
   definitions: null
-timestamp: '2023-04-27T03:50:26.342385+00:00'
+timestamp: '2023-04-30T16:55:45.256942+00:00'
