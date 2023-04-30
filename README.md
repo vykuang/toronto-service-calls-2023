@@ -160,10 +160,10 @@ terraform apply
   - `agent` executes prefect flow
     - start-up script installs docker, prefect, creates prefect blocks, and runs prefect agent
   - instance type: `e2-medium`; anything less have not been able to run prefect server/agent in my experience
-    - this is beyond free tier elibility and will incur costs
+    - *this is beyond free tier eligibility and will incur costs*
 - service account with permissions to access the above resources
 
-View prefect server UI after creation completes at http://{server-external-IP}:4200; check that the prefect blocks for GCS storage and docker infra have been created correctly
+View prefect server UI after creation completes at `http://{server-external-IP}:4200`; check that the prefect blocks for GCS storage and docker infra have been created correctly
 
 ### 4 Prefect
 
@@ -181,7 +181,7 @@ cd service_calls_311 && ./deploy.py --apply --run
 1. Create cloud dbt account
 1. Connect to the bigquery dataset created from terraform
    - will need to download the service account json key from cloud console for upload
-1. Connect to the dbt models repository
+1. Connect to your forked dbt models repository
 1. Replace the `project_id` vars in `dbt_project.yml` and the `sources: database` value in `models/staging/schema.yml`
 1. run `dbt dept` and `dbt seed`
 1. Create job with command `dbt build --var="is_test_run:false"`
@@ -218,5 +218,8 @@ Full credits to statscan and open data toronto for providing these datasets.
 
 - move to dbt-core so that it can be orchestrated by prefect
   - dbt cloud *can* be orchestrated, but API access requires paid accounts
+  - host dbt-core's documentations on GCS as [static website](https://cloud.google.com/storage/docs/hosting-static-website)
 - tests for the `extract_load` flow
 - migrate the executor to cloud run so that resources are used only when a flow deployment is active, instead of continuously running a GCE instance
+- integrate GCP's artifacts registry and cloud build to create a private docker repository that only the service account may retrieve
+- promote the GCE ephemeral IP to permanent

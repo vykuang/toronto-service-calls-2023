@@ -63,8 +63,9 @@ Google's solution for private packages *and* docker images repository. [Quick st
 
 - enable API `artifactregistry.googleapis.com`
 - configure auth to push/pull images
-  - `gcloud auth configure-docker $TF_VAR_region-docker.pkg.dev`
-  - requires `y` interaction
+  - `gcloud auth configure-docker $TF_VAR_region-docker.pkg.dev --quiet`
+  - requires `y` interaction or set `--quiet`
+  - must add to `prefect.agent` startup script, with `sudo`
 - image paths in artifact registry has these parts:
   - location - `us`, or `us-west1`
   - hostname - `docker.pkg.dev` - seems to be constant
@@ -85,6 +86,26 @@ Google's solution for private packages *and* docker images repository. [Quick st
 
 - terraform:
   - repo
-  - iam repo read permission for service account
+  - `artifact registry reader` for service account
+  - `writer` if we want it to build as well
 - `docker build -t img:tag .`
 - `docker push`
+- use `.gcloudignore` to specify which files to skip upload
+  - exclude everything **except** `requirements.txt` and `Dockerfile`
+  - without `Dockerfile`, build will fail at step 0
+
+### Cloud Build
+
+Alternatively, enable `cloudbuild.googleapis.com` and send Dockerfile to cloud build:
+
+```sh
+# in same dir as Dockerfile
+gcloud auth configure-docker us-west2-docker.pkg.dev --quiet
+gcloud builds submit \
+    --region=us-west2 \
+    --tag us-west2-docker.pkg.dev/$TF_VAR_project_id/$TF_VAR_project_id/service-calls:prod-dev
+```
+
+[Restricted to only `us-west2` for some reason](https://cloud.google.com/build/docs/locations#restricted_regions_for_some_projects)
+
+May be out of scope for this project

@@ -13,6 +13,10 @@ DATASET = os.getenv("TF_VAR_bq_dataset")
 
 
 def deploy(apply: bool = True, run: bool = False):
+    """
+    Builds the prefect flow deployment
+    Optionally applies and manually trigger a run if flags are specified
+    """
     deploy_name = "extract-load"
     storage = GCS.load("service-code-storage")
     container = DockerContainer.load("service-call-infra")
@@ -40,6 +44,8 @@ def deploy(apply: bool = True, run: bool = False):
         deployment.apply()
     if run:
         response = run_deployment(
+            # deployments are spec'd by flow-func/deploy-name
+            # where flow-func has '_' replaced by '-'
             name=f'{extract_load_service_calls.__name__.replace("_","-")}/{deploy_name}'
         )
         print(response)

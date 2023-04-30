@@ -7,10 +7,10 @@ description: "\"\nExtracts CSV as parquets and loads into bigquery dataset\n\nPa
   \ name of dataset in bigquery\nyear: str\n    year for which to extract the service\
   \ call request records\noverwrite: bool\n    if true, overwrite existing parquet/dataset\n\
   test: bool\n    if true, load only a small subset onto bigquery"
-version: 626e6f53adcf62bc3d053ce5ab0da6d8
+version: d0e86ba9c9576c1d89c00d5dc7a425c1
 # The work queue that will handle this deployment's runs
 work_queue_name: service-calls
-work_pool_name: default-agent-pool
+work_pool_name: null
 tags: []
 parameters:
   bucket_name: service-data-lake-564
@@ -22,7 +22,7 @@ schedule:
   cron: 0 0 1 * *
   timezone: null
   day_or: true
-is_schedule_active: true
+is_schedule_active: null
 infra_overrides: {}
 
 ###
@@ -52,7 +52,7 @@ infrastructure:
   memswap_limit: null
   mem_limit: null
   privileged: false
-  _block_document_id: 8f635c09-8a7e-499a-9772-8c408484dce8
+  _block_document_id: 5f6051e5-63ac-49fb-b06b-d8894bebab2e
   _block_document_name: service-call-infra
   _is_anonymous: false
   block_type_slug: docker-container
@@ -61,7 +61,7 @@ storage:
   bucket_path: service-data-lake-564/code/
   service_account_info: null
   project: service-calls-dev
-  _block_document_id: ab5a0aa8-ebfd-479d-854f-b08dfd73870a
+  _block_document_id: 9f321401-408c-4f36-afbb-b3d91e7e91dc
   _block_document_name: service-code-storage
   _is_anonymous: false
   block_type_slug: gcs
@@ -99,4 +99,4 @@ parameter_openapi_schema:
   - dataset_name
   - year
   definitions: null
-timestamp: '2023-04-30T13:48:17.021452+00:00'
+timestamp: '2023-04-30T16:55:45.256942+00:00'
