@@ -175,7 +175,7 @@ def blob_exists(blob_path: str, bucket_name: str) -> bool:
     Does this blob exist?
     """
     logger = get_run_logger()
-    logger.info(f"{GOOGLE_CLOUD_PROJECT}: GCP project ID")
+    logger.info(f"GCP project ID: {GOOGLE_CLOUD_PROJECT}")
     gcs = storage.Client(project=GOOGLE_CLOUD_PROJECT)
     bucket = gcs.bucket(bucket_name=bucket_name)
     exists = storage.Blob(bucket=bucket, name=blob_path).exists(client=gcs)
@@ -233,7 +233,7 @@ def load_bigquery(src_uris: str, dest_table: str, location: str = LOCATION):
     LoadJob class object
     """
     logger = get_run_logger()
-    logger.info(f"{GOOGLE_CLOUD_PROJECT}: GCP project ID")
+    logger.info(f"GCP project ID: {GOOGLE_CLOUD_PROJECT}")
     client = bigquery.Client(
         location=location,
         project=GOOGLE_CLOUD_PROJECT,  # infer from env

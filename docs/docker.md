@@ -56,3 +56,35 @@ Let's try it locally by mounting the flow code
 - Compute instance running must have docker installed. duh.
 
 How to debug without overriding entrypoint...
+
+## Artifact Registry
+
+Google's solution for private packages *and* docker images repository. [Quick start guide here](https://cloud.google.com/artifact-registry/docs/docker/store-docker-container-images#create)
+
+- enable API `artifactregistry.googleapis.com`
+- configure auth to push/pull images
+  - `gcloud auth configure-docker $TF_VAR_region-docker.pkg.dev`
+  - requires `y` interaction
+- image paths in artifact registry has these parts:
+  - location - `us`, or `us-west1`
+  - hostname - `docker.pkg.dev` - seems to be constant
+  - repo ID - `google-samples`
+  - repo path - `containers/gke/`
+  - image name - `hello-app:1.0`
+  - e.g. `us-docker.pkg.dev/google-samples/containers/gke/hello-app:1.0`
+- push image:
+  - first, tag image with the repo ID to configure docker push
+  - `docker tag vykuang/service-calls:prod-latest $TF_VAR_region-docker.pkg.dev/$TF_VAR_project_id/$TF_VAR_repo_id/service-calls:prod-latest`
+
+### Configuration with prefect?
+
+- how to configure?
+- as long as execution layer (GCE instance `agent`) has the permissions, `DockerRegistry` block is not required
+
+### Implementation
+
+- terraform:
+  - repo
+  - iam repo read permission for service account
+- `docker build -t img:tag .`
+- `docker push`

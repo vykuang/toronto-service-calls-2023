@@ -137,7 +137,7 @@ resource "time_sleep" "wait_service_enable" {
 # orchestration server
 resource "google_compute_instance" "server" {
   name         = "server"
-  machine_type = "e2-micro"
+  machine_type = "e2-medium"
   boot_disk {
     initialize_params {
       size  = 10
@@ -179,10 +179,10 @@ resource "google_compute_instance" "server" {
 # prefect execution agent
 resource "google_compute_instance" "agent" {
   name         = "agent"
-  machine_type = "e2-micro"
+  machine_type = "e2-medium"
   boot_disk {
     initialize_params {
-      size  = 20
+      size  = 15
       type  = "pd-standard"
       image = data.google_compute_image.prefect.self_link
     }
