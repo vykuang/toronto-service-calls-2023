@@ -1,0 +1,6 @@
+# specifies ignored files for gcloud builds submit
+*.*
+*/
+*
+!Dockerfile
+!requirements.txt

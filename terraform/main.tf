@@ -52,7 +52,6 @@ resource "google_bigquery_table" "ward-geojson" {
   deletion_protection = false
   dataset_id          = google_bigquery_dataset.dataset.dataset_id
   table_id            = "city_wards_map"
-  #   depends_on = [google_bigquery_dataset.dataset]
 }
 
 # load geojson from bucket into table
@@ -92,6 +91,7 @@ resource "google_service_account" "service-agent" {
 locals {
   sa_member = "serviceAccount:${google_service_account.service-agent.email}"
 }
+# resource-specific roles
 # assign the bucket role to our service account
 resource "google_storage_bucket_iam_member" "service-agent-iam" {
   bucket = google_storage_bucket.data-lake.name
@@ -113,7 +113,7 @@ resource "google_project_iam_member" "service-agent-iam" {
   member   = local.sa_member
 }
 
-# upload make-infra to bucket
+# upload prefect blocks to bucket for later execution
 resource "google_storage_bucket_object" "prefect-block" {
   for_each = var.prefect_blocks
   name     = "code/${each.key}.py"
@@ -154,18 +154,19 @@ resource "google_compute_instance" "server" {
     }
   }
   metadata_startup_script = <<SCRIPT
-    if [[ -f /etc/startup_was_launched ]]; then exit 0; fi
-    gcloud config set compute/zone ${var.zone}
-    sudo apt update
-    sudo apt upgrade -y
-    sudo apt autoremove -y
-    sudo apt install python3-pip -y
-    pip3 install -U pip "prefect==2.8.4"
-    sudo chmod 666 /etc/environment
-    sudo echo "EXTERNAL_IP=$(gcloud compute instances describe server --zone ${var.zone}| grep natIP | cut -d: -f 2 | tr -d ' ' | tail -n 1)" >> /etc/environment
-    source /etc/environment
-    sudo chmod 444 /etc/environment
-    sudo touch /etc/startup_was_launched
+    if [[ ! -f /etc/startup_was_launched ]]; then
+        gcloud config set compute/zone ${var.zone}
+        sudo apt update
+        sudo apt upgrade -y
+        sudo apt autoremove -y
+        sudo apt install python3-pip -y
+        pip3 install -U pip "prefect==2.8.4"
+        sudo chmod 666 /etc/environment
+        sudo echo "EXTERNAL_IP=$(gcloud compute instances describe server --zone ${var.zone}| grep natIP | cut -d: -f 2 | tr -d ' ' | tail -n 1)" >> /etc/environment
+        . /etc/environment
+        sudo chmod 444 /etc/environment
+        sudo touch /etc/startup_was_launched
+    fi
     prefect config set PREFECT_UI_API_URL=http://$EXTERNAL_IP:4200/api
     prefect server start --host 0.0.0.0
     SCRIPT
@@ -182,55 +183,56 @@ resource "google_compute_instance" "agent" {
   machine_type = "e2-medium"
   boot_disk {
     initialize_params {
-      size  = 20
+      size  = 15
       type  = "pd-standard"
       image = data.google_compute_image.prefect.self_link
     }
 
   }
   metadata_startup_script = <<SCRIPT
-    if [[ -f /etc/startup_was_launched ]]; then exit 0; fi
-    sudo apt update
-    sudo apt upgrade -y
-    sudo apt autoremove -y
-    sudo apt remove docker docker-engine docker.io containerd runc -y
-    sudo apt install \
-        ca-certificates \
-        curl \
-        gnupg
-    sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
-    echo \
-    "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt update
-    sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-    sudo usermod -aG docker $USER
-    newgrp docker
-    sudo apt install python3-pip -y
-    sudo pip3 install -U --no-cache-dir pip
-    sudo pip3 install --no-cache-dir "prefect==2.8.4"
-    sudo chmod 666 /etc/environment
-    sudo echo "PREFECT_API_URL=http://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}:4200/api" >> /etc/environment
-    sudo echo "TF_VAR_project_id=${var.project_id}" >> /etc/environment
-    sudo echo "TF_VAR_region=${var.region}" >> /etc/environment
-    sudo echo "TF_VAR_zone=${var.zone}" >> /etc/environment
-    sudo echo "TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> /etc/environment
-    sudo echo "TF_VAR_bq_dataset=${var.bq_dataset}" >> /etc/environment
-    set -o allexport
-    . /etc/environment
-    set +a allexport
-    sudo chmod 444 /etc/environment
-    prefect config set PREFECT_API_URL=$PREFECT_API_URL
-    # make_infra
-    mkdir code && cd code
-    gsutil cp ${google_storage_bucket.data-lake.url}/code/make_*.py .
-    python3 make_infra.py
-    python3 make_gcs_sb.py
-    # create flag to indicate instance has been launched before
-    sudo touch /etc/startup_was_launched
+    if [[ ! -f /etc/startup_was_launched ]]; then
+        sudo apt update
+        sudo apt upgrade -y
+        sudo apt autoremove -y
+        sudo apt remove docker docker-engine docker.io containerd runc -y
+        sudo apt install \
+            ca-certificates \
+            curl \
+            gnupg
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        echo \
+        "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt update
+        sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+        sudo usermod -aG docker $USER
+        newgrp docker
+        sudo apt install python3-pip -y
+        sudo pip3 install -U --no-cache-dir pip
+        sudo pip3 install --no-cache-dir "prefect==2.8.4"
+        sudo chmod 666 /etc/environment
+        sudo echo "PREFECT_API_URL=http://${google_compute_instance.server.network_interface.0.access_config.0.nat_ip}:4200/api" >> /etc/environment
+        sudo echo "TF_VAR_project_id=${var.project_id}" >> /etc/environment
+        sudo echo "TF_VAR_region=${var.region}" >> /etc/environment
+        sudo echo "TF_VAR_zone=${var.zone}" >> /etc/environment
+        sudo echo "TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> /etc/environment
+        sudo echo "TF_VAR_bq_dataset=${var.bq_dataset}" >> /etc/environment
+        set -o allexport
+        . /etc/environment
+        set +o allexport
+        sudo chmod 444 /etc/environment
+        prefect config set PREFECT_API_URL=$PREFECT_API_URL
+        # make_infra
+        mkdir code && cd code
+        gsutil cp ${google_storage_bucket.data-lake.url}/code/make_*.py .
+        python3 make_infra.py
+        python3 make_gcs_sb.py
+        # create flag to indicate instance has been launched before
+        sudo touch /etc/startup_was_launched
+    fi
     prefect agent start -q service-calls
     SCRIPT
   network_interface {
@@ -250,6 +252,7 @@ resource "google_compute_instance" "agent" {
     google_storage_bucket_object.prefect-block
   ]
 }
+# amend firewall rule to allow prefect UI access at port 4200
 resource "google_compute_firewall" "prefect-ui" {
   project = var.project_id
   name = "prefect-ui"
@@ -257,12 +260,13 @@ resource "google_compute_firewall" "prefect-ui" {
   description = "allows access to prefect server UI"
   allow {
     protocol = "tcp"
-    ports = ["4200-4300"]
+    ports = ["4200"]
   }
   allow {
     protocol = "udp"
-    ports = ["4200-4300"]
+    ports = ["4200"]
   }
   direction = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
+  depends_on = [google_project_service.services["compute.googleapis.com"]]
 }

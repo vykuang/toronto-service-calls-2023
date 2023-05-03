@@ -1,8 +1,6 @@
 """
 Creates the prefect block via code
 Easier to set env vars for the container rather than UI
-Run this script on the prefect agent instance so that $HOME gets
-the correct directory to mount the credential file
 """
 from prefect.infrastructure.docker import DockerContainer
 
@@ -16,7 +14,6 @@ DATASET = os.getenv("TF_VAR_bq_dataset")
 HOME = os.getenv("HOME")
 
 block_name = "service-call-infra"
-# gcp_dir = "/home/ubuntu/.config/gcloud"
 infra_block = DockerContainer(
     name=block_name,
     image="vykuang/service-calls:prod-latest",
@@ -26,7 +23,6 @@ infra_block = DockerContainer(
         "TF_VAR_data_lake_bucket": BUCKET,
         "TF_VAR_bq_dataset": DATASET,
         "GOOGLE_CLOUD_PROJECT": GOOGLE_CLOUD_PROJECT,
-        # "GOOGLE_APPLICATION_CREDENTIALS": f"{gcp_dir}/application_default_credentials.json",
     },
     image_pull_policy="ALWAYS",
     auto_remove=False,
