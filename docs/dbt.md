@@ -64,6 +64,11 @@ Think about migrating to dbt-core...
 - It defines all the profiles that can be used within each project specific `dbt_project.yml` that *is* inside a dbt project repo
 - Each profile specifies the connection info, e.g. to bigquery, or postgres
   - typically one profile for each type of data warehouse
+    - top level block, below `config`
+    - `org_name_db_type`, e.g. `acme_bigquery`, is a common convention for profile name
+    - used in project's `dbt_project.yml`
+  - `target` may be one of many in a profile, and corresponds to the different environments, e.g. `dev` for local dev that points to a dev dataset, and `prod` to point to production dataset, with different service account credentials
+    - often it may be better to only have `dev` on local, and target `prod` on a separate machine, e.g. docker container
   - may contain sensitive credential materials
   - optionally populate with environment variables
     - `password: "{{ env_var('DBT_PASSWORD') }}"`
@@ -80,6 +85,12 @@ Production grade docs means hosting the info remotely on cloud storage. Site is 
 
 - [dbt docs docs](https://docs.getdbt.com/docs/collaborate/documentation#deploying-the-documentation-site)
 - [hosting static website on gcs](https://cloud.google.com/storage/docs/hosting-static-website)
+
+1. name bucket - `DOCS_BUCKET=$DOCS_BUCKET`
+1. create gcs bucket - `gsutil mb -l us-west1 -b on $DOCS_BUCKET`
+1. upload static assets - `gsutil cp file1 file2 $DOCS_BUCKET`
+1. assign specialty pages - `gsutil web set -m index.html $DOCS_BUCKET`
+1. set up load balancer and SSL cert - add bucket to load balancer's backend, and add google-managed SSL cert to load balancer's frontend
 
 ### Orchestration
 
