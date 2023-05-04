@@ -77,6 +77,12 @@ Think about migrating to dbt-core...
     - use default: `+materialized: "{{ env_var('DBT_MATERIALIZATION', 'view') }}"`
   - if profile authentication (e.g. service key) is not set properly, `dbt debug` returns `profile not found` error
 
+### Containerization
+
+Running a dbt as a container is fairly straightforward; bind the dbt project dir to `/usr/app/`, and bind profiles.yml to `/root/.dbt/profiles.yml`. Issue is authentication.
+
+There are two main methods: oauth, which takes from your application-default and meant for end-users, and service-accounts, meant more for prod. Oauth will not work in a local container unless we bind mount the local ADC to the container, which isn't practical in prod. If we use cloud build/cloud run however, GCP is able to inject the service account credential into the container for us. [Blogpost on scheduled serverless dbt on GCP cloud run](https://atamel.dev/posts/2020/07-29_scheduled_serverless_dbt_with_bigquery/)
+
 ### docs
 
 `dbt docs generate` creates `target/catalog.json`; `dbt docs serve` hosts a local website that displays the docs, meant for local dev
