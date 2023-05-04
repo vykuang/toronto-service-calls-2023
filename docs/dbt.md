@@ -85,12 +85,61 @@ Production grade docs means hosting the info remotely on cloud storage. Site is 
 
 - [dbt docs docs](https://docs.getdbt.com/docs/collaborate/documentation#deploying-the-documentation-site)
 - [hosting static website on gcs](https://cloud.google.com/storage/docs/hosting-static-website)
+  - requires having my own domain
+  - gcp offers domain registration
+- [using app engine without needing domain](https://medium.com/hiflylabs/dbt-docs-as-a-static-website-c50a5b306514)
+
+#### GCS backend with load balancer
 
 1. name bucket - `DOCS_BUCKET=$DOCS_BUCKET`
 1. create gcs bucket - `gsutil mb -l us-west1 -b on $DOCS_BUCKET`
 1. upload static assets - `gsutil cp file1 file2 $DOCS_BUCKET`
 1. assign specialty pages - `gsutil web set -m index.html $DOCS_BUCKET`
 1. set up load balancer and SSL cert - add bucket to load balancer's backend, and add google-managed SSL cert to load balancer's frontend
+
+- load balancing > https load balancer > start config
+- internet > VMs
+- global https
+- give name, e.g. dbt-docs-lb
+
+1. configure frontend
+
+- protocol > https
+- IPv4
+- IP addr: create and name, e.g. dbt-docs-ip, and reserve
+- cert: create new cert
+  - name `dbt-docs-ssl`
+  - create mode: google managed
+  - domain: one that we have, perhaps from gcp, e.g. www.dbt-docs.com
+  - done
+
+1. backend config
+
+- choose name for backend bucket; name can be different from static-assets bucket
+- browse, and choose the static-assets bucket created earlier
+- create
+
+1. routing rules config - automatically setup
+1. Review and create
+1. connect domain to load balancer
+
+- after creation, choose our `dbt-docs-lb` balancer and note the IP
+- on domain registration service, create type `A` record that points to our lb IP
+
+1. Monitor SSL cert status; may take 60-90 min for GCP to provision the cert and make available the site
+1. Try `www.dbt-docs.com`; should route to `index.html`
+
+#### App engine
+
+1. deploy app.yml in dbt project root
+
+### Load balancer
+
+Load balancer distributes user traffic across multiple app instances so that no one node is overwhelmed. It acts as the frontend buffer between user traffic and the compute/storage backends. For example, it can route user to the closest geographic node for lower latency and load distribution.
+
+It is a software-defined managed service; no physical hardware to manage.
+
+Choose between external/internal for internet > GCP or GCP \<> GCP, and regional/global to distribute load geographically
 
 ### Orchestration
 
