@@ -88,6 +88,7 @@ Production grade docs means hosting the info remotely on cloud storage. Site is 
   - requires having my own domain
   - gcp offers domain registration
 - [using app engine without needing domain](https://medium.com/hiflylabs/dbt-docs-as-a-static-website-c50a5b306514)
+- [Securing the app engine site with IAP (identity-aware proxy)](https://codelabs.developers.google.com/codelabs/user-auth-with-iap#2)
 
 #### GCS backend with load balancer
 
@@ -131,7 +132,16 @@ Production grade docs means hosting the info remotely on cloud storage. Site is 
 
 #### App engine
 
-1. deploy app.yml in dbt project root
+The blog combines the catalog and manifest json into index.html and deploys to GCP app engine
+
+1. run `make_dbt_docs.py`
+1. create `.gcloudignore`, allow only `targets/` and `public/`, and create `app.yaml` in dbt project root
+1. deploy app.yaml in dbt project root - `gcloud app deploy`
+
+- this uploads all files to a auto-generated gcs bucket, and deploys the app
+
+1. browse by `gcloud app browse` or nav to the output url manually
+1. secure with IAP; requires user to login with google account once set up
 
 ### Load balancer
 
