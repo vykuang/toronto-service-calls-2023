@@ -61,6 +61,7 @@ Think about migrating to dbt-core...
 ### profiles.yml
 
 - Local dbt requires a `~/.dbt/profiles.yml` which is outside of all dbt project repos
+  - project specific `profiles.yml` can also be used
 - It defines all the profiles that can be used within each project specific `dbt_project.yml` that *is* inside a dbt project repo
 - Each profile specifies the connection info, e.g. to bigquery, or postgres
   - typically one profile for each type of data warehouse
@@ -79,9 +80,17 @@ Think about migrating to dbt-core...
 
 ### Containerization
 
-Running a dbt as a container is fairly straightforward; bind the dbt project dir to `/usr/app/`, and bind profiles.yml to `/root/.dbt/profiles.yml`. Issue is authentication.
+Running a dbt as a container is fairly straightforward; bind the dbt project dir to `/usr/app/`, and bind profiles.yml to `/root/.dbt/profiles.yml`. Could also bake the code directly into the container image into artifact registry for cloud run.
 
-There are two main methods: oauth, which takes from your application-default and meant for end-users, and service-accounts, meant more for prod. Oauth will not work in a local container unless we bind mount the local ADC to the container, which isn't practical in prod. If we use cloud build/cloud run however, GCP is able to inject the service account credential into the container for us. [Blogpost on scheduled serverless dbt on GCP cloud run](https://atamel.dev/posts/2020/07-29_scheduled_serverless_dbt_with_bigquery/)
+Issue is authentication.
+
+There are two main methods:
+
+- `oauth`, which takes from your application-default and meant for end-users, and
+- `service-accounts`, meant more for prod, requires setting `keyfile` to the service account key filepath
+  - use `keyfile: "{{ env_var('DBT_KEYFILE') }}"` to hide sensitive information
+
+Oauth will not work in a local container unless we bind mount the local ADC to the container, which isn't practical in prod. If we use cloud build/cloud run however, GCP is able to inject the service account credential into the container for us. [Blogpost on scheduled serverless dbt on GCP cloud run](https://atamel.dev/posts/2020/07-29_scheduled_serverless_dbt_with_bigquery/)
 
 ### docs
 

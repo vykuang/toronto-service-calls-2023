@@ -223,3 +223,19 @@ Full credits to statscan and open data toronto for providing these datasets.
 - migrate the executor to cloud run so that resources are used only when a flow deployment is active, instead of continuously running a GCE instance
 - integrate GCP's artifacts registry and cloud build to create a private docker repository that only the service account may retrieve
 - promote the GCE ephemeral IP to permanent
+
+### To-do
+
+- create new GCP trial instance?
+- revise flow to include dbt-core
+  - add subflow to trigger dbt commands
+  - need to use `prefect_dbt.cli` module to load `DbtCliProfile` and invoke `DbtCoreOperation`?
+  - can the dbt-core models repo be integrated to this repo?
+  - host docs on app engine?
+  - run a local flow with just the dbt portion
+- convert the executor agent to cloud run
+  - invoked only when flow is scheduled
+  - server should remain as a persistent VM instance
+- update transformations
+  - group similar service request types, e.g. roadkills/cadavers, waste pickups, etc.
+- integrate artifacts registry/cloud build as part of the pipeline to create private docker repo
