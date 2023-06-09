@@ -54,9 +54,7 @@ Orchestrating cloud dbt via API requires paid accounts.
 
 ## dbt core
 
-Schedule the job on the UI instead of via prefect
-
-Think about migrating to dbt-core...
+Use open source dbt-core to integrate into orchestration pipeline
 
 ### profiles.yml
 
@@ -158,7 +156,7 @@ The blog combines the catalog and manifest json into index.html and deploys to G
 1. browse by `gcloud app browse` or nav to the output url manually
 1. secure with IAP; requires user to login with google account once set up
 
-### Load balancer
+#### Load balancer
 
 Load balancer distributes user traffic across multiple app instances so that no one node is overwhelmed. It acts as the frontend buffer between user traffic and the compute/storage backends. For example, it can route user to the closest geographic node for lower latency and load distribution.
 
@@ -173,3 +171,14 @@ Choose between external/internal for internet > GCP or GCP \<> GCP, and regional
 Requires `project_dir` and `profiles_dir` to be set, defined as either a prefect block
 
 Basically triggers the bash `dbt` commands to run
+
+### Implementation
+
+- use `prefect-dbt`
+  - executor needs `dbt-core` installed
+    - and `dbt-bigquery` so that dbt can connect to bq
+  - setup profile block
+  - set profiles.yml and project folder dir
+- dockerize the dbt-core and dbt-bigquery and use it to run `dbt` CLI commands
+  - container has all the models baked in
+  - runs code on bigquery datasets

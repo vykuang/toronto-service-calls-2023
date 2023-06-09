@@ -17,7 +17,7 @@ data/lib
 *.csv
 *.zip
 *.parquet
-prefect-test/
+# prefect-test/
 
 # dev
 notebooks/
@@ -25,3 +25,7 @@ notebooks/
 .terraform
 .terraform.*
 tfplan
+
+# dbt artifacts
+dbt_packages/
+target/

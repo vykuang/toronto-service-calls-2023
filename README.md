@@ -233,6 +233,7 @@ Full credits to statscan and open data toronto for providing these datasets.
   - can the dbt-core models repo be integrated to this repo?
   - host docs on app engine?
   - run a local flow with just the dbt portion
+  - or fold dbt into container for cloud run
 - convert the executor agent to cloud run
   - invoked only when flow is scheduled
   - server should remain as a persistent VM instance

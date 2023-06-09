@@ -1,0 +1,71 @@
+###
+### A complete description of a Prefect Deployment for flow 'log-flow'
+###
+name: log-flow
+description: null
+version: 92d53717536e837f6e4cd461f7b318be
+# The work queue that will handle this deployment's runs
+work_queue_name: test
+work_pool_name: default-agent-pool
+tags: []
+parameters:
+  name: service-data-lake
+schedule: null
+is_schedule_active: true
+infra_overrides: {}
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: log-flow
+manifest_path: null
+infrastructure:
+  type: docker-container
+  env:
+    TF_VAR_project_id: service-calls-pipeline-382901
+    TF_VAR_region: us-west1
+    TF_VAR_data_lake_bucket: service-data-lake
+    TF_VAR_bq_dataset: service_calls_models
+    GOOGLE_CLOUD_PROJECT: service-calls-pipeline-382901
+  labels: {}
+  name: service-call-infra
+  command: null
+  image: vykuang/service-calls:base-pip-v2
+  image_pull_policy: ALWAYS
+  image_registry: null
+  networks: []
+  network_mode: null
+  auto_remove: false
+  volumes: []
+  stream_output: true
+  memswap_limit: null
+  mem_limit: null
+  privileged: false
+  _block_document_id: 2ccb667c-b042-4053-bca6-91b5132d335a
+  _block_document_name: service-call-infra
+  _is_anonymous: false
+  block_type_slug: docker-container
+  _block_type_slug: docker-container
+storage:
+  bucket_path: service-data-lake/code/
+  service_account_info: null
+  project: service-calls-pipeline-382901
+  _block_document_id: 8090af39-a53d-4ec4-a5fe-2cc3d119f86d
+  _block_document_name: service-code-storage
+  _is_anonymous: false
+  block_type_slug: gcs
+  _block_type_slug: gcs
+path: ''
+entrypoint: flows/log_flow.py:log_flow
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties:
+    name:
+      title: name
+      position: 0
+      type: string
+  required:
+  - name
+  definitions: null
+timestamp: '2023-04-26T16:10:28.244319+00:00'
