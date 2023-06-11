@@ -9,6 +9,7 @@ import pandas as pd
 from tempfile import TemporaryDirectory
 import argparse
 from prefect import flow, task, get_run_logger
+from prefect_dbt.cli.commands import DbtCoreOperation, trigger_dbt_cli_command
 
 # from dotenv import load_dotenv
 import os
@@ -21,6 +22,7 @@ LOCATION = os.getenv("TF_VAR_region")
 BUCKET = os.getenv("TF_VAR_data_lake_bucket")
 DATASET = os.getenv("TF_VAR_bq_dataset")
 
+DBT_PROJECT_DIR = "/home/kohada/dbt-core-service-calls"
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
 # https://docs.ckan.org/en/latest/api/
@@ -349,10 +351,16 @@ def load(src_uris: str, dataset_name: str, year: str):
 
 
 @flow
-def transform():
+def transform() -> str:
     """
     Invokes dbt-core to transform dataset within bigquery
     """
+    result = DbtCoreOperation(
+        commands=["pwd", "dbt debug", "dbt test"],
+        project_dir=DBT_PROJECT_DIR,
+        profiles_dir=DBT_PROJECT_DIR,
+    ).run()
+    return result
 
 
 @flow
@@ -395,6 +403,7 @@ def extract_load_service_calls(
         test=test,
     )
     load_job = load(src_uris=gs_pq_path, dataset_name=dataset_name, year=year)
+    transform()
 
 
 if __name__ == "__main__":
