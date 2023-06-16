@@ -13,8 +13,8 @@ prefect = "^2.8"
 pyarrow = "^10.0.1"
 gcsfs = "^2023.1.0"
 google-cloud-bigquery = "^3.8.0"
-prefect-dbt = "^0.3.1"
 dbt-bigquery = "^1.5.1"
+google-cloud-run = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^23.1.0"}

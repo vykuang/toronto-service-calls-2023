@@ -134,3 +134,22 @@ def sample_run_job():
 - attached service account
 
 ### dockerfile
+
+This will be submitted to cloud build, and stored in artifact registry. Include all dependencies for our flows
+
+To start, use one dockerfile for extract, load, and dbt?
+
+### proof of concept
+
+- dockerfile with all dependencies
+  - use `poetry export` and `pip install -r requirements.txt`
+- create artifacts repo in `gcr.io` domain
+  - `us-west1-docker.pkg.dev/service-calls-dev/task-containers`
+- shell script to submit to cloud build and artifacts
+  - create `cloudbuild.yaml` [from this template which uses user substitutions](https://cloud.google.com/artifact-registry/docs/configure-cloud-build#docker)
+  - `gcloud builds submit --config=cloudbuild.yaml \  --substitutions=_LOCATION="us-west1",_REPOSITORY="task-containers",_IMAGE="my-image" .`
+  - will use the Dockerfile and `.yaml` in the same dir running the shell script
+  - pay attention to `.dockerignore` and `.gcloudignore`
+    - `gcloud` will by default upload entire dir to temp gcs bucket; use `.gcloudignore`
+    - from uploaded files, docker will refer to `.dockerignore`
+- py script to trigger cloud run using the artifacts image
