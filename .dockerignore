@@ -1,7 +1,15 @@
-# specifies ignored files for gcloud builds submit
-*.*
-*/
-*
-!Dockerfile
-!requirements.txt
-!*.py
+# specifies ignored files for docker build
+data/
+docs/
+img/
+notebooks/
+prefect-test/
+terraform/
+
+# files
+*.md
+*.sh
+.*
+*.json
+*.env
+Makefile
