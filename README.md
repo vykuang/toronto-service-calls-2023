@@ -30,6 +30,7 @@ Besides finding the area with the most noise complaints, this project is an exer
 - efficiency - relating to reliability, how do we model our data to minimize compute? E.g. partitioning and/or clustering, or creating a compact view for end-user to query against, instead of querying against the whole dataset
 - able to handle late data
 - good data quality - processing to remove void entries, e.g. entries missing ward or FSA code
+- scalability - if there's no work, it should scale to 0 nodes; conversely it should be elastic to handle increased workload by scaling horizontally
 
 ## Data visualization
 

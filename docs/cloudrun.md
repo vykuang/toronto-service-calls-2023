@@ -20,6 +20,9 @@
   - linked to service account, used to authenticate with other GCP APIs
     - solves dbt docker authentication
   - continuous delivery; configure to automatically deploy new commits
+  - **NOT SET UP FOR RUNTIME PARAMETRIZATION**
+    - must *update* with desired arguments before job execution
+    - having a hard time finding out how to do so with python client
 
 ## cloud run jobs - a new framework
 
@@ -133,6 +136,62 @@ def sample_run_job():
 - env variables and secrets, mount as vol or expose as env var
 - attached service account
 
+### update job
+
+in order to parametrize our jobs, we need to update jobs at runtime with the passed arguments as new environment variables with `UpdateJobRequest`
+
+```py
+def sample_update_job(job_id):
+    """
+    Not from official docs, just what I could hack together
+    """
+    # Create a client
+    client = run_v2.JobsClient()
+
+    # Initialize request argument(s)
+    new_envs = [
+        run_v2.EnvVar(name="var", value="newval"),
+        run_v2.EnvVar(name="var2", value="newvalue2"),
+        run_v2.EnvVar(name="var3", value="for kicks"),
+    ]
+    # the below boilerplate was necessary to properly encapsulate "new_envs"
+    container = run_v2.Container(
+        image=f"us-west1-docker.pkg.dev/{GOOGLE_CLOUD_PROJECT}/task-containers/agent:test",
+        command=["python3"],
+        args=["main.py"],
+        env=new_envs
+    )
+    task_template = run_v2.TaskTemplate(
+        containers=[container],
+        max_retries=4,
+    )
+    execution_template = run_v2.ExecutionTemplate(
+        task_count=2,
+        template=task_template,
+    )
+    job = run_v2.Job(
+        name=f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{LOCATION}/jobs/{job_id}",
+        template=execution_template
+    )
+    job.template.template.max_retries = 3
+    # job.template.template.containers.env = envs
+
+    # instantiate updatejobrequest
+    request = run_v2.UpdateJobRequest(
+        job=job,
+    )
+
+    # # send the request
+    operation = client.update_job(request=request)
+
+    print("Waiting for operation to complete...")
+
+    response = operation.result()
+
+    # # Handle the response
+    print(response)
+```
+
 ### dockerfile
 
 This will be submitted to cloud build, and stored in artifact registry. Include all dependencies for our flows
@@ -152,4 +211,17 @@ To start, use one dockerfile for extract, load, and dbt?
   - pay attention to `.dockerignore` and `.gcloudignore`
     - `gcloud` will by default upload entire dir to temp gcs bucket; use `.gcloudignore`
     - from uploaded files, docker will refer to `.dockerignore`
+    - does it only use `main.py`? no it depends on the Dockerfile `ENTRYPOINT`
 - py script to trigger cloud run using the artifacts image
+
+### production
+
+- each task, (extract, load, transform) will have individual job-id
+  - created at setup time, by terraform?
+- ~~no clear cut way of updating job environment variables via python client~~
+  - no analog to `gcloud run update-job`
+  - prefect has API to allow new entrypoint, command, and ENVs
+    - they create new jobs, run immediately, then cleanup after
+  - we can do that as well?
+  - or just use `prefect-gcp`?
+- `UpdateJobRequest` figured out; see above code block

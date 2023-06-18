@@ -1,0 +1,12 @@
+FROM ghcr.io/dbt-labs/dbt-bigquery:1.5.0
+# RUN apt-get update && apt-get install
+# RUN pip install -U pip
+
+# WORKDIR /tmp
+
+# COPY requirements.txt ./
+# RUN pip install --no-cache-dir --no-input --no-deps -r requirements.txt --dry-run
+
+# COPY ../jobs/ ./
+
+ENTRYPOINT [ "run" ]

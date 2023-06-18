@@ -6,7 +6,7 @@ quality_checks:
 	black .
 
 export_reqs:
-	poetry export -f requirements.txt -o requirements.txt
+	poetry export -f requirements.txt -o dockerfiles/requirements.txt
 
 build_dev: quality_checks export_reqs
 	docker build -t vykuang/service-calls:dev-${LOCAL_TAG} .
