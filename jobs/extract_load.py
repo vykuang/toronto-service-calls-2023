@@ -350,7 +350,7 @@ def extract_load_service_calls(
     overwrite: bool = False,
     test: bool = False,
 ):
-    """ "
+    """
     Extracts CSV as parquets and loads into bigquery dataset
 
     Parameters

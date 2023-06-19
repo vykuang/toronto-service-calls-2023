@@ -225,3 +225,4 @@ To start, use one dockerfile for extract, load, and dbt?
   - we can do that as well?
   - or just use `prefect-gcp`?
 - `UpdateJobRequest` figured out; see above code block
+- update, then run

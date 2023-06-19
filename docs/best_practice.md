@@ -1,5 +1,17 @@
 # Best practices
 
+## Engineering
+
+- managed, serverless containers
+- loosely-coupled systems
+  - containerization via cloud run
+  - orchestration does not touch transformation logic, only scheduling, monitor, logging, restarts
+- security via IAM
+- orchestration
+  - logging
+  - restarts
+  - monitoring
+
 ## Makefile
 
 ### Install make
@@ -36,3 +48,5 @@ LOCAL_IMG_NAME:=stream-model-duration:${LOCAL_TAG}
 ### Quirks
 
 Make commands require **tab** indents; but once we're inside a bash script, need to go back to to **spaces** for indents
+
+## pytest
