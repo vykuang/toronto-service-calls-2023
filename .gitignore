@@ -20,7 +20,7 @@ data/lib
 # prefect-test/
 
 # dev
-notebooks/
+# notebooks/
 # terraform artifacts
 .terraform
 .terraform.*

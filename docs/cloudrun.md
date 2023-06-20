@@ -66,22 +66,22 @@ def sample_create_job():
     # Create a client
     client = run_v2.JobsClient()
 
-	# init request args
-	job = run_v2.Job()
-	job.template.template.max_retries = 1187
+    # init request args
+    job = run_v2.Job()
+    job.template.template.max_retries = 1187
 
-	request = run_v2.CreateJobRequest(
-		parent="projects/my-project/locations/us-west1",
-		job=job,
-		job_id="job-somesixdigitnum", # full: {parent}/jobs/{job_id}
-	)
+    request = run_v2.CreateJobRequest(
+      parent="projects/my-project/locations/us-west1",
+      job=job,
+      job_id="job-somesixdigitnum", # full: {parent}/jobs/{job_id}
+    )
 
-	# make request
-	op = client.create_job(request=request)
-	resp = op.result()
+    # make request
+    op = client.create_job(request=request)
+    resp = op.result()
 
-	# handle response
-	print(response)
+    # handle response
+    print(response)
 ```
 
 ### terraform
@@ -225,4 +225,11 @@ To start, use one dockerfile for extract, load, and dbt?
   - we can do that as well?
   - or just use `prefect-gcp`?
 - `UpdateJobRequest` figured out; see above code block
-- update, then run
+  - Needs string literals, otherwise trips with `bad built-in operation` error when it sees variables
+  - solution: cast to `str()`
+  - I imagine the same was true when I tried to create sequence of `EnvVar` with list comprehension
+- `EnvVar` will not change, set with terraform
+  - if updated, *all prior env vars* will be replaced with new set of env vars
+  - if `env` was not specified, it will replaced with nothing
+  - need to rethink how env vars are set, and whether they're needed
+- ## `Container.args` will be updated depending on task parameters
