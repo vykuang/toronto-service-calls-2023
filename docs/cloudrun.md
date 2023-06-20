@@ -232,4 +232,6 @@ To start, use one dockerfile for extract, load, and dbt?
   - if updated, *all prior env vars* will be replaced with new set of env vars
   - if `env` was not specified, it will replaced with nothing
   - need to rethink how env vars are set, and whether they're needed
-- ## `Container.args` will be updated depending on task parameters
+- `Container.args` will be updated depending on task parameters
+  - only update `args`; leave `command` to use default entrypoint
+  - if we do not specify `command`, it will be as if we supplied an empty command

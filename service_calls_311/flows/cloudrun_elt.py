@@ -30,8 +30,11 @@ def execute_cloud_run(
     request = run_v2.RunJobRequest(
         name=f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{LOCATION}/jobs/{job_id}",
     )
-    op = client.run_job(request=request)
-    return op.result()
+    operation = client.run_job(request=request)
+    response = operation.result()
+
+    # # Handle the response
+    return response
 
 
 def update_cloud_run(
@@ -46,18 +49,36 @@ def update_cloud_run(
     """
     Updates cloud run job config
     """
-    # Initialize request argument(s)
+    # Initialize request argument(s); replaces all existing env vars
     new_envs = [
         run_v2.EnvVar(name="var", value="newval"),
         run_v2.EnvVar(name="var2", value="newvalue2"),
         run_v2.EnvVar(name="var3", value="for kicks"),
     ]
     # the below boilerplate was necessary to properly encapsulate "new_envs"
+    if "transform" in job_id.lower():
+        # leaving command blank uses default container entrypoint
+        # command = ["run"]
+        args = ["run", "--is_test", str(test)]
+    else:
+        # command=["python3", "cloudrun_elt.py"]
+        args = [
+            "--bucket_name",
+            str(bucket_name),
+            "--dataset_name",
+            str(dataset_name),
+            "--year",
+            str(year),
+            "--overwrite",
+            str(overwrite),
+            "--test",
+            str(test),
+        ]
     container = run_v2.Container(
         image=f"{LOCATION}-docker.pkg.dev/{GOOGLE_CLOUD_PROJECT}/{ARTIFACT_REPO}/agent:test",
-        command=["python3"],
-        args=["main.py"],
-        env=new_envs,
+        # command=command,
+        args=args,
+        # env=new_envs,
     )
     task_template = run_v2.TaskTemplate(
         containers=[container],
@@ -80,12 +101,10 @@ def update_cloud_run(
     # send the request
     operation = client.update_job(request=request)
 
-    print("Waiting for operation to complete...")
-
     response = operation.result()
 
     # # Handle the response
-    print(response)
+    return response
 
 
 @task
@@ -107,12 +126,14 @@ def extract(
         overwrite=overwrite,
         test=test,
     )
-    execute_cloud_run(client=client, job_id=EXTRACT_JOB_ID)
+    response = execute_cloud_run(client=client, job_id=EXTRACT_JOB_ID)
+    return response
 
 
 @task
 def load(
     client: run_v2.JobsClient,
+    bucket_name: str,
     dataset_name: str,
     year: str = "2020",
     overwrite: bool = False,
@@ -124,12 +145,14 @@ def load(
     update_cloud_run(
         client=client,
         job_id=LOAD_JOB_ID,
+        bucket_name=bucket_name,
         dataset_name=dataset_name,
         year=year,
         overwrite=overwrite,
         test=test,
     )
-    execute_cloud_run(client=client, job_id=LOAD_JOB_ID)
+    response = execute_cloud_run(client=client, job_id=LOAD_JOB_ID)
+    return response
 
 
 @task
@@ -140,7 +163,7 @@ def transform(
     test: bool = False,
 ):
     """
-    transform bq dataset with dbt via lcoud run
+    transform bq dataset with dbt via CLOUD run
     """
     update_cloud_run(
         client=client,
@@ -149,7 +172,8 @@ def transform(
         year=year,
         test=test,
     )
-    execute_cloud_run(client=client, job_id=TRANSFORM_JOB_ID)
+    response = execute_cloud_run(client=client, job_id=TRANSFORM_JOB_ID)
+    return response
 
 
 @flow
@@ -182,25 +206,38 @@ def elt_service_calls(
         f"Beginning extract with env vars:\nproject ID: {GOOGLE_CLOUD_PROJECT}\nlocation: {LOCATION}"
     )
     client = run_v2.JobsClient()
-    res_ex = execute_cloud_run(
+    res_ex = extract(
         client,
-        "extract",
         bucket_name=bucket_name,
         year=year,
         overwrite=overwrite,
         test=test,
     )
     logger.info(res_ex)
-    res_load = execute_cloud_run(client, "load-bq")
+
+    res_load = load(
+        client,
+        bucket_name=bucket_name,
+        dataset_name=dataset_name,
+        year=year,
+        overwrite=overwrite,
+        test=test,
+    )
     logger.info(res_load)
-    res_transform = transform()
+
+    res_transform = transform(
+        client,
+        dataset_name=dataset_name,
+        year=year,
+        test=test,
+    )
     logger.info(res_transform)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="Fetch311Records",
-        description="Fetch 311 service records and stores as parquet",
+        prog="toronto-311-service",
+        description="Data pipeline for 311 service records",
         epilog="DE zoomcamp project",
     )
     opt = parser.add_argument

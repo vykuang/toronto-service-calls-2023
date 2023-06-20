@@ -1,11 +1,4 @@
 steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build',
-          '-f',
-          'dockerfiles/Dockerfile.sample',
-          '-t',
-          '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE1}',
-          '.' ]
 # substitutions needed in the gcloud submit command:
 #   _LOCATION, _REPOSITORY, _IMAGE
 - name: 'gcr.io/cloud-builders/docker'
@@ -13,9 +6,18 @@ steps:
           '-f',
           'dockerfiles/Dockerfile.extract_load',
           '-t',
-          '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE2}',
+          '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_EL}',
+          '.' ]
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build',
+          '-f',
+          'dockerfiles/Dockerfile.dbt',
+          '-t',
+          '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_T}',
           '.' ]
 
 # this step pushes to artifact registry
 images:
-- '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}'
+- '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_EL}'
+- '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_T}'
