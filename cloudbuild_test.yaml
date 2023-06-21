@@ -1,0 +1,14 @@
+steps:
+# substitutions needed in the gcloud submit command:
+#   _LOCATION, _REPOSITORY, _IMAGE
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build',
+          '-f',
+          'dockerfiles/Dockerfile.sample',
+          '-t',
+          '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}',
+          '.' ]
+
+# this step pushes to artifact registry
+images:
+- '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}'

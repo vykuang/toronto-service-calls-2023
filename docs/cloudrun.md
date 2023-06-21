@@ -235,3 +235,9 @@ To start, use one dockerfile for extract, load, and dbt?
 - `Container.args` will be updated depending on task parameters
   - only update `args`; leave `command` to use default entrypoint
   - if we do not specify `command`, it will be as if we supplied an empty command
+  - again, *if we do not specify env while updating args, envs will be wiped clean*
+- how to pass `src_uris` from `extract` to `load` cloud run?
+  - return as an env var?
+    - works in notebook context, but unable to retrieve in external shell
+  - assign a temporary bucket location to pick up parquets from, and cleanup after?
+  - run both in the same container, no need to persist anything

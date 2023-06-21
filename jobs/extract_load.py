@@ -386,8 +386,8 @@ def extract_load_service_calls(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="Fetch311Records",
-        description="Fetch 311 service records and stores as parquet",
+        prog="toronto-311-service",
+        description="Data pipeline for 311 service records",
         epilog="DE zoomcamp project",
     )
     opt = parser.add_argument
@@ -407,7 +407,7 @@ if __name__ == "__main__":
     )
     opt("-y", "--year", default="2020", type=str)
     opt(
-        "-O",
+        "-o",
         "--overwrite",
         action="store_true",
         default=False,
