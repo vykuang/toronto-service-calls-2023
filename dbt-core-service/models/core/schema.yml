@@ -1,0 +1,7 @@
+
+version: 2
+
+models:
+    - name: requests_by_ward
+      description: >
+        Aggregate summary of most frequent requests by ward 

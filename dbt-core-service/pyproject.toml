@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "dbt-core-service-calls"
+version = "0.1.0"
+description = "Virtual env for dbt core service calls"
+authors = ["vykuang <vykuang92@gmail.com>"]
+readme = "README.md"
+packages = [{include = "dbt_core_service_calls"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+dbt-core = "^1.5"
+dbt-bigquery = "^1.5"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
