@@ -1,12 +1,20 @@
 FROM python:3.10-slim
-RUN apt-get update && apt-get install
-RUN pip install -U pip
 
-WORKDIR /app
+ARG GCP_PROJECT_ID
+ARG BQ_DATASET
+ARG GCS_BUCKET
+ARG SCRIPT_DIR
+
+ENV GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID}
+ENV BQ_DATASET=${BQ_DATASET}
+ENV GCS_BUCKET=${GCS_BUCKET}
+
+WORKDIR /tmp
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --no-input --no-deps -r requirements.txt --dry-run
 
-COPY ../jobs/extract_load.py ./
+WORKDIR /app
+COPY ${SCRIPT_DIR}/extract_load.py ./
 
 ENTRYPOINT [ "python3", "extract_load.py" ]

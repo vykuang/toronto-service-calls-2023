@@ -241,3 +241,16 @@ To start, use one dockerfile for extract, load, and dbt?
     - works in notebook context, but unable to retrieve in external shell
   - assign a temporary bucket location to pick up parquets from, and cleanup after?
   - run both in the same container, no need to persist anything
+- how to package the dbt-project folder into the docker image?
+  - need to include the folder as a subfolder in the service project root
+  - how will that affect git?
+    - add `dbt-project/` in main project's .gitignore
+    - `dbt-project/` is its own git
+    - `git clean -dfx` will remove all items in `.gitignore`
+    - `git clone` will also not have `dbt-project/`
+      - add instruction to `git clone dbt-project.git` after `cd main-repo`?
+  - use `git subtree`???
+    - add as a remote first: `git remote add -f alias-for-remote <url-to-subtree-repo.git>`
+    - ensure current staging is clean, i.e. no unstaged edits
+    - add as a subtree: `git subtree add --prefix local-dir-for-subtree alias-for-remote remote-branch --squash`
+      - this copies the repo to local directory

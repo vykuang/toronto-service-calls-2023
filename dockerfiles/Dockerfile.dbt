@@ -1,12 +1,21 @@
 FROM ghcr.io/dbt-labs/dbt-bigquery:1.5.0
-# RUN apt-get update && apt-get install
-# RUN pip install -U pip
 
-# WORKDIR /tmp
+ARG BQ_PROJECT_ID
+ARG BQ_DATASET
+ARG DBT_PROJECT_DIR
 
-# COPY requirements.txt ./
-# RUN pip install --no-cache-dir --no-input --no-deps -r requirements.txt --dry-run
+ENV DBT_PROJECT_DIR=$DBT_PROJECT_DIR
+ENV BQ_PROJECT_ID=$BQ_PROJECT_ID
+ENV BQ_DATASET=$BQ_DATASET
 
-# COPY ../jobs/ ./
+# default env values, can be overridden
+ENV BQ_LOCATION="us-west1"
+ENV DBT_PROFILES_DIR=/usr/app/
+ENV TARGET=prod
 
-ENTRYPOINT [ "run" ]
+COPY $DBT_PROJECT_DIR /usr/app/
+
+# default entrypoint is already "dbt"
+RUN dbt debug --target=$TARGET
+
+ENTRYPOINT [ "dbt", "deps", "&&", "dbt", "run", "--target=$TARGET" ]
