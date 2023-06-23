@@ -1,0 +1,27 @@
+config:
+  send_anonymous_usage_stats: false
+  use_colors: true
+
+service_calls_bigquery:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: service-calls-dev
+      dataset: service_calls_models
+      threads: 4
+      job_execution_timeout_seconds: 600
+      job_retries: 5
+      location: us-west1
+    prod:
+      type: bigquery
+      method: service-account
+      project: service-calls-dev
+      dataset: service_calls_models
+      threads: 4
+      job_execution_timeout_seconds: 600
+      job_retries: 5
+      location: us-west1
+      keyfile: /usr/app/auth/keyfile.json
+
