@@ -1,10 +1,13 @@
 FROM python:3.10-slim
 
+# pass at build time with --build-arg <var_name>=<value>
+# only useable in docker build scope
 ARG GCP_PROJECT_ID
 ARG BQ_DATASET
 ARG GCS_BUCKET
 ARG SCRIPT_DIR
 
+# persists in image
 ENV GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID}
 ENV BQ_DATASET=${BQ_DATASET}
 ENV GCS_BUCKET=${GCS_BUCKET}
@@ -18,3 +21,5 @@ WORKDIR /app
 COPY ${SCRIPT_DIR}/extract_load.py ./
 
 ENTRYPOINT [ "python3", "extract_load.py" ]
+## CMD will be updated by job config
+CMD [ "--year", "2023", "--overwrite", "True", "--test", "False" ]

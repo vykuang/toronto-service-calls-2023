@@ -241,6 +241,8 @@ To start, use one dockerfile for extract, load, and dbt?
     - works in notebook context, but unable to retrieve in external shell
   - assign a temporary bucket location to pick up parquets from, and cleanup after?
   - run both in the same container, no need to persist anything
+  - downside is we lost prefect logging in between
+    - rely on cloud logging to retrieve cloud run outputs?
 - how to package the dbt-project folder into the docker image?
   - need to include the folder as a subfolder in the service project root
   - how will that affect git?
@@ -254,3 +256,15 @@ To start, use one dockerfile for extract, load, and dbt?
     - ensure current staging is clean, i.e. no unstaged edits
     - add as a subtree: `git subtree add --prefix local-dir-for-subtree alias-for-remote remote-branch --squash`
       - this copies the repo to local directory
+    - update from upstream with
+      - `git fetch alias-for-remote main`
+      - `git subtree pull --prefix local-dir-subtree alias-for-remote main --squash`
+- Organizing variables
+  - build time:
+    - PROJ_ID
+    - BQ_DATASET
+    - GCS_BUCKET
+  - run time:
+    - year
+    - overwrite
+    - test
