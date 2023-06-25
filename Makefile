@@ -1,10 +1,13 @@
+# Take vars directly from shell env var
+# fills in empty string if not supplied
 
-LOCAL_TAG:=$(shell date +"%Y%m%d_%H%M%S")
-LOCAL_IMG_NAME:=stream-model-duration:${LOCAL_TAG}
-LOCATION:=us-west1
-REPOSITORY:=task-containers
-IMAGE_EL:=extract_load
-IMAGE_T:=dbt
+# LOCAL_TAG:=$(shell date +"%Y%m%d_%H%M%S")
+# LOCAL_IMG_NAME:=stream-model-duration:${LOCAL_TAG}
+# TF_VAR_region:=us-west1
+# TF_VAR_repository:=task-containers
+# IMAGE_EL:=extract_load
+# IMAGE_T:=dbt
+
 quality_checks:
 	black .
 
@@ -22,4 +25,13 @@ build_prod: build_prep
 cbuild_dev: build_prep
 	gcloud builds submit \
     --config=cloudbuild.yaml \
-	--substitutions=_LOCATION=$(LOCATION),_REPOSITORY=$(REPOSITORY),_IMAGE_EL=$(IMAGE_EL),_IMAGE_T=$(IMAGE_T) .
+	--substitutions=_LOCATION=$(TF_VAR_region),_REPOSITORY=$(TF_VAR_repository),_IMAGE_EL=$(IMAGE_EL),_IMAGE_T=$(IMAGE_T) .
+
+cbuild_prod: build_prep
+	gcloud builds submit \
+	--config=cloudbuild.yaml \
+	--substitutions=_LOCATION=$(TF_VAR_region),_REPOSITORY=$(TF_VAR_repository)
+
+check_env:
+	@echo ${TEST_ENV}
+	@echo ${TEST_ENV2}
