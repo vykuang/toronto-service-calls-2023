@@ -20,7 +20,7 @@ variable "zone" {
   default = null
 }
 
-variable "data_lake_bucket" {
+variable "gcs_bucket" {
   type        = string
   default     = null
   description = "bucket name to store service call data"

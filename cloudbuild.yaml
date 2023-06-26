@@ -7,14 +7,10 @@ steps:
           'dockerfiles/Dockerfile.extract_load',
           '-t',
           '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_EL}',
-          '--build-arg',
-          'GCP_PROJECT_ID=$PROJECT_ID',
-          '--build-arg',
-          'BQ_DATASET=${_BQ_DATASET}',
-          '--build-arg',
-          'GCS_BUCKET=${_GCS_BUCKET}',
-          '--build-arg',
-          'SCRIPT_DIR=${_SCRIPT_DIR}',
+          '--build-arg', 'GCP_PROJECT_ID=$PROJECT_ID',
+          '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
+          '--build-arg', 'GCS_BUCKET=${_GCS_BUCKET}',
+          '--build-arg', 'SCRIPT_DIR=${_SCRIPT_DIR}',
           '.' ]
 
 - name: 'gcr.io/cloud-builders/docker'
@@ -23,12 +19,9 @@ steps:
           'dockerfiles/Dockerfile.dbt',
           '-t',
           '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_T}',
-          '--build-arg',
-           'GCP_PROJECT_ID=$PROJECT_ID',
-          '--build-arg',
-          'BQ_DATASET=${_BQ_DATASET}',
-          '--build-arg',
-          'DBT_PROJECT_DIR=${_DBT_PROJECT_DIR}',
+          '--build-arg', 'GCP_PROJECT_ID=$PROJECT_ID',
+          '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
+          '--build-arg', 'DBT_PROJECT_DIR=${_DBT_PROJECT_DIR}',
           '.' ]
 
 substitutions:

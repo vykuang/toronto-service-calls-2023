@@ -20,6 +20,12 @@ pub_path = Path(PATH_DBT_PROJECT / "public")
 if not pub_path.exists():
     pub_path.mkdir()
 with open(pub_path / "index.html", "w") as f:
-    new_str = "o=[{label: 'manifest', data: "+json.dumps(json_manifest)+"},{label: 'catalog', data: "+json.dumps(json_catalog)+"}]"
+    new_str = (
+        "o=[{label: 'manifest', data: "
+        + json.dumps(json_manifest)
+        + "},{label: 'catalog', data: "
+        + json.dumps(json_catalog)
+        + "}]"
+    )
     new_content = content_index.replace(search_str, new_str)
     f.write(new_content)

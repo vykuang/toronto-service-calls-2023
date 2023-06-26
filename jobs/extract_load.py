@@ -10,18 +10,14 @@ from tempfile import TemporaryDirectory
 import argparse
 import logging
 
-# from dotenv import load_dotenv
 import os
 
-# load_dotenv()
 
 GOOGLE_CLOUD_PROJECT = os.getenv("TF_VAR_project_id")
 os.environ["GOOGLE_CLOUD_PROJECT"] = GOOGLE_CLOUD_PROJECT
 LOCATION = os.getenv("TF_VAR_region")
-BUCKET = os.getenv("TF_VAR_data_lake_bucket")
+BUCKET = os.getenv("TF_VAR_gcs_bucket")
 DATASET = os.getenv("TF_VAR_bq_dataset")
-
-DBT_PROJECT_DIR = "/home/kohada/dbt-core-service-calls"
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
 # https://docs.ckan.org/en/latest/api/
@@ -371,8 +367,11 @@ def extract_load_service_calls(
     logger.info(f"bucket: {bucket_name}\ndataset: {dataset_name}\nyear: {year}")
     # validate
     for name in [bucket_name, dataset_name]:
-        if not all([name[0].isalnum(), name[-1].isalnum()]):
-            raise ValueError(f"Invalid bucket or dataset name: {name}")
+        try:
+            if not all([name[0].isalnum(), name[-1].isalnum()]):
+                raise ValueError(f"Invalid bucket or dataset name: {name}")
+        except TypeError as e:
+            print(e("Empty name for bucket or dataset"))
     if int(year) < 2015 or int(year) > 2023:
         raise ValueError(f"Invalid year: {year}")
     gs_pq_path = extract_service_calls(

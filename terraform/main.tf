@@ -24,7 +24,7 @@ resource "google_project_service" "services" {
   disable_dependent_services = false
 }
 resource "google_storage_bucket" "data-lake" {
-  name                        = var.data_lake_bucket
+  name                        = var.gcs_bucket
   location                    = var.region
   force_destroy               = true
   storage_class               = "STANDARD"
@@ -218,7 +218,7 @@ resource "google_compute_instance" "agent" {
         sudo echo "TF_VAR_project_id=${var.project_id}" >> /etc/environment
         sudo echo "TF_VAR_region=${var.region}" >> /etc/environment
         sudo echo "TF_VAR_zone=${var.zone}" >> /etc/environment
-        sudo echo "TF_VAR_data_lake_bucket=${var.data_lake_bucket}" >> /etc/environment
+        sudo echo "TF_VAR_gcs_bucket=${var.gcs_bucket}" >> /etc/environment
         sudo echo "TF_VAR_bq_dataset=${var.bq_dataset}" >> /etc/environment
         set -o allexport
         . /etc/environment
