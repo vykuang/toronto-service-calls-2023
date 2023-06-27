@@ -363,7 +363,10 @@ def extract_load_service_calls(
         if true, load only a small subset onto bigquery
 
     """
-
+    num_loglevel = getattr(logging, num_loglevel.upper(), None)
+    if not isinstance(num_loglevel, int):
+        raise ValueError(f"Invalid log level: {num_loglevel}")
+    logger.setLevel(level=num_loglevel)
     logger.info(f"bucket: {bucket_name}\ndataset: {dataset_name}\nyear: {year}")
     # validate
     for name in [bucket_name, dataset_name]:
@@ -419,6 +422,12 @@ if __name__ == "__main__":
         default=False,
         help="If specified, only reads small section of csv",
     )
+    opt(
+        "--loglevel",
+        default="INFO",
+        type=str.upper,
+        help="Log level, from DEBUG to CRITICAL",
+    )
     args = parser.parse_args()
     extract_load_service_calls(
         bucket_name=args.bucket_name,
@@ -426,4 +435,5 @@ if __name__ == "__main__":
         year=args.year,
         overwrite=args.overwrite,
         test=args.test,
+        loglevel=args.loglevel,
     )

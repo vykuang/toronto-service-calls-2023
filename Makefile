@@ -2,7 +2,9 @@
 # fills in empty string if not supplied
 
 LOCAL_TAG:=$(shell date +"%Y%m%d_%H%M%S")
-LOCAL_IMG_NAME:=service-calls:${LOCAL_TAG}
+LOCAL_EL_IMAGE:=service-calls:${LOCAL_TAG}
+LOCAL_DBT_IMAGE:=service-calls:dbt-${LOCAL_TAG}
+DOCKER_REPO:=vykuang
 GOOGLE_APPLICATION_CREDENTIALS=/home/root/.config/gcloud/application_default_credentials.json
 # TF_VAR_region:=us-west1
 # TF_VAR_repository:=task-containers
@@ -19,7 +21,7 @@ build_prep: quality_checks export_reqs
 
 build_dev: build_prep
 	docker build \
-	-t vykuang/${LOCAL_IMG_NAME} \
+	-t ${DOCKER_REPO}/${LOCAL_EL_IMAGE} \
 	-f dockerfiles/Dockerfile.extract_load \
 	--build-arg GCP_PROJECT_ID=$(TF_VAR_project_id) \
 	--build-arg LOCATION=$(TF_VAR_region) \
@@ -33,6 +35,17 @@ run_dev_local:
 	-v=/home/klang/.config/gcloud/:/home/root/.config/gcloud/:ro \
 	-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 	vykuang/service-calls:20230626_161614 --year=2023 --overwrite --test
+
+build_dbt_dev:
+	docker build \
+	-t ${DOCKER_REPO}/${LOCAL_DBT_IMAGE} \
+	-f dockerfiles/Dockerfile.dbt \
+	--build-arg GCP_PROJECT_ID=$(TF_VAR_project_id) \
+	--build-arg LOCATION=$(TF_VAR_region) \
+	--build-arg BQ_DATASET=$(TF_VAR_bq_dataset) \
+	--build-arg DBT_PROJECT_DIR=$(DBT_PROJECT_DIR) \
+	.
+
 
 build_prod: build_prep
 	docker build -t vykuang/service-calls:prod-latest .

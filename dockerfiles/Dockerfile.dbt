@@ -2,16 +2,17 @@ FROM ghcr.io/dbt-labs/dbt-bigquery:1.5.0
 
 # take args at build time
 ARG GCP_PROJECT_ID
+ARG GCP_REGION
 ARG BQ_DATASET
 ARG DBT_PROJECT_DIR
 
 # persist in image as ENV
 ENV GCP_PROJECT_ID=$GCP_PROJECT_ID
+ENV GCP_REGION=$GCP_REGION
 ENV BQ_DATASET=$BQ_DATASET
 ENV DBT_PROJECT_DIR=$DBT_PROJECT_DIR
 
 # default env values, can be overridden
-ENV BQ_LOCATION="us-west1"
 ENV DBT_PROFILES_DIR=/usr/app/
 ENV TARGET=prod
 
