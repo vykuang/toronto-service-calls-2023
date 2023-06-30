@@ -8,7 +8,7 @@ LOCAL_DBT_IMAGE:=service-calls-dbt:${LOCAL_TAG}
 DOCKER_REPO:=vykuang
 GCP_CONFIG_DIR=/home/${USER}/.config/gcloud
 GOOGLE_APPLICATION_CREDENTIALS=/home/root/.config/gcloud/application_default_credentials.json
-DBT_PROJECT_DIR:=./dbt-core-service/
+HOST_PROJECT_DIR:=./dbt-core-service/
 KEYFILE_LOCATION=/usr/app/keyfile.json
 
 
@@ -33,8 +33,8 @@ build_dev: build_prep
 	--build-arg SCRIPT_DIR=jobs/ \
 	.
 
-run_dev_local:
-	docker run \
+run_docker_local:
+	docker run --rm \
 	-v=/home/klang/.config/gcloud/:/home/root/.config/gcloud/:ro \
 	-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 	${DOCKER_REPO}/${LOCAL_EL_IMAGE} --year=2023 --overwrite --test
@@ -46,15 +46,15 @@ build_dbt_dev:
 	--build-arg GCP_PROJECT_ID=$(TF_VAR_project_id) \
 	--build-arg BQ_LOCATION=$(TF_VAR_region) \
 	--build-arg BQ_DATASET=$(TF_VAR_bq_dataset) \
-	--build-arg DBT_PROJECT_DIR=$(DBT_PROJECT_DIR) \
+	--build-arg HOST_PROJECT_DIR=$(HOST_PROJECT_DIR) \
 	--build-arg KEYFILE_LOCATION=$(KEYFILE_LOCATION) \
 	.
 
-dbt_dev_local:
-	docker run \
+dbt_docker_local:
+	docker run --rm \
 	-v=${GCP_CONFIG_DIR}/service-dbt.json:$(KEYFILE_LOCATION) \
-	-e TARGET=dev \
-	${DOCKER_REPO}/${LOCAL_DBT_IMAGE} \
+	--entrypoint="" \
+	${DOCKER_REPO}/${LOCAL_DBT_IMAGE} dbt debug --target=docker
 
 build_prod: build_prep
 	docker build -t vykuang/service-calls:prod-latest .
