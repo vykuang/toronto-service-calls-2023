@@ -53,6 +53,7 @@ build_dbt_dev:
 dbt_dev_local:
 	docker run \
 	-v=${GCP_CONFIG_DIR}/service-dbt.json:$(KEYFILE_LOCATION) \
+	-e TARGET=dev \
 	${DOCKER_REPO}/${LOCAL_DBT_IMAGE} \
 
 build_prod: build_prep
