@@ -8,20 +8,19 @@ service_calls_bigquery:
     dev:
       type: bigquery
       method: oauth
-      project: service-calls-dev
-      dataset: service_calls_models
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('BQ_DATASET') }}"
       threads: 4
       job_execution_timeout_seconds: 600
-      job_retries: 5
-      location: us-west1
+      job_retries: 3
+      location: "{{ env_var('BQ_LOCATION') }}"
     prod:
       type: bigquery
       method: service-account
-      project: service-calls-dev
-      dataset: service_calls_models
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('BQ_DATASET') }}"
       threads: 4
       job_execution_timeout_seconds: 600
-      job_retries: 5
-      location: us-west1
-      keyfile: /usr/app/auth/keyfile.json
-
+      job_retries: 3
+      location: "{{ env_var('BQ_LOCATION') }}"
+      keyfile: "{{ env_var('KEYFILE_LOCATION') }}"
