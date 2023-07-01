@@ -6,10 +6,11 @@ LOCAL_TAG:=$(shell date +"%Y%m%d")
 LOCAL_EL_IMAGE:=service-calls:${LOCAL_TAG}
 LOCAL_DBT_IMAGE:=service-calls-dbt:${LOCAL_TAG}
 DOCKER_REPO:=vykuang
+ARTIFACT_REGISTRY:=task-containers
 GCP_CONFIG_DIR=/home/${USER}/.config/gcloud
 GOOGLE_APPLICATION_CREDENTIALS=/home/root/.config/gcloud/application_default_credentials.json
 HOST_PROJECT_DIR:=./dbt-core-service/
-KEYFILE_LOCATION=/usr/app/keyfile.json
+KEYFILE_LOCATION=/usr/dbt/auth/keyfile.json
 
 
 quality_checks:
@@ -22,7 +23,7 @@ export_reqs:
 
 build_prep: quality_checks export_reqs
 
-build_dev: build_prep
+build_docker: build_prep
 	docker build \
 	-t ${DOCKER_REPO}/${LOCAL_EL_IMAGE} \
 	-f dockerfiles/Dockerfile.extract_load \
@@ -33,13 +34,13 @@ build_dev: build_prep
 	--build-arg SCRIPT_DIR=jobs/ \
 	.
 
-run_docker_local:
+run_docker:
 	docker run --rm \
 	-v=/home/klang/.config/gcloud/:/home/root/.config/gcloud/:ro \
 	-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 	${DOCKER_REPO}/${LOCAL_EL_IMAGE} --year=2023 --overwrite --test
 
-build_dbt_dev:
+build_dbt_docker: quality_checks
 	docker build \
 	-t ${DOCKER_REPO}/${LOCAL_DBT_IMAGE} \
 	-f dockerfiles/Dockerfile.dbt \
@@ -48,27 +49,27 @@ build_dbt_dev:
 	--build-arg BQ_DATASET=$(TF_VAR_bq_dataset) \
 	--build-arg HOST_PROJECT_DIR=$(HOST_PROJECT_DIR) \
 	--build-arg KEYFILE_LOCATION=$(KEYFILE_LOCATION) \
+	--build-arg TARGET=docker \
 	.
 
-dbt_docker_local:
+run_dbt_docker: quality_checks
 	docker run --rm \
 	-v=${GCP_CONFIG_DIR}/service-dbt.json:$(KEYFILE_LOCATION) \
-	--entrypoint="" \
-	${DOCKER_REPO}/${LOCAL_DBT_IMAGE} dbt debug --target=docker
+	--entrypoint="/usr/local/bin/dbt"  \
+	${DOCKER_REPO}/${LOCAL_DBT_IMAGE} test --target=docker
 
-build_prod: build_prep
-	docker build -t vykuang/service-calls:prod-latest .
 
-cbuild_dev: build_prep
+cbuild: build_prep
 	gcloud builds submit \
     --config=cloudbuild.yaml \
-	--substitutions=_LOCATION=$(TF_VAR_region),_REPOSITORY=$(TF_VAR_repository),_IMAGE_EL=$(IMAGE_EL),_IMAGE_T=$(IMAGE_T) .
+	--substitutions=_REPOSITORY=$(TF_VAR_repository),_IMAGE_EL=$(IMAGE_EL),_IMAGE_T=$(IMAGE_T) .
 
 cbuild_prod: build_prep
 	gcloud builds submit \
 	--config=cloudbuild.yaml \
-	--substitutions=_LOCATION=$(TF_VAR_region),_REPOSITORY=$(TF_VAR_repository)
+	--substitutions=_REPOSITORY=$(TF_VAR_repository)
 
+cbuild_dbt: build_prep
 check_env:
 	@echo ${TEST_ENV}
 	@echo ${TEST_ENV2}

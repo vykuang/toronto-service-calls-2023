@@ -4,9 +4,12 @@ FROM ghcr.io/dbt-labs/dbt-bigquery:1.5.0
 ARG GCP_PROJECT_ID
 ARG BQ_LOCATION
 ARG BQ_DATASET
-ARG DBT_PROJECT_DIR=/usr/app/
+# not /usr/app/ since base img uses that in VOLUME
+# and overwrites the RUN dbt deps layer below
+ARG DBT_PROJECT_DIR=/usr/dbt/
 ARG HOST_PROJECT_DIR
 ARG KEYFILE_LOCATION
+ARG TARGET
 
 # persist in image as ENV
 ENV GCP_PROJECT_ID=$GCP_PROJECT_ID
@@ -18,11 +21,10 @@ ENV KEYFILE_LOCATION=$KEYFILE_LOCATION
 # default env values, can be overridden
 WORKDIR $DBT_PROJECT_DIR
 ENV DBT_PROFILES_DIR=$DBT_PROJECT_DIR
-ENV TARGET=prod
+ENV TARGET=${TARGET}
 
 COPY $HOST_PROJECT_DIR .
 
-# default entrypoint is already "dbt"
-# RUN dbt debug --target=$TARGET --project-dir=/usr/app
+RUN dbt deps
 
-ENTRYPOINT [ "dbt", "deps", "&&", "dbt", "run", "--target=$TARGET" ]
+ENTRYPOINT [ "dbt", "run", "--target=$TARGET" ]

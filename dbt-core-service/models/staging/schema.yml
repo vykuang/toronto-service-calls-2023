@@ -3,12 +3,12 @@ version: 2
 
 sources:
     - name: staging
-      database: service-calls-dev # project
-      schema: service_calls_models # dataset
-      tables: 
-        - name: facts_2023_partitioned
+      database: '{{var("project_id")}}' # project
+      schema: '{{var("dataset")}}' # dataset
+      tables:
+        - name: '{{var("facts_table")}}'
         - name: city_wards_map
-      
+
 
 models:
     - name: stg_service_calls
@@ -66,4 +66,3 @@ models:
             - relationships:
                 field: Ward_Number
                 to: ref('ward_id_lookup')
-    

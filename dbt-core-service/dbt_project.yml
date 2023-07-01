@@ -38,6 +38,8 @@ models:
 
 vars:
   project_id: "service-calls-dev"
+  dataset: "service_calls_model"
+  facts_table: "facts_2023_partitioned"
 
 seeds:
   service_request_calls:
