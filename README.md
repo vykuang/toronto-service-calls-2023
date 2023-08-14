@@ -63,6 +63,10 @@ Besides finding the area with the most noise complaints, this project is an exer
   - restarts
   - handles late data
   - executes via dockerized apps
+- execution: Cloud Run
+  - stateless, containerized app
+  - images stored on Artifact Registry
+  - dockerfiles sent to Cloud Build
 - Visualization: Looker
   - combine with geojson to produce choropleth map
 - Security: Cloud IAM
@@ -71,6 +75,8 @@ Besides finding the area with the most noise complaints, this project is an exer
   - responsible for cloud infra
   - gcs bucket
   - bigquery dataset
+  - artifact registry
+  - cloud run jobs
 
 ## Run it yourself
 

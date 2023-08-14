@@ -1,12 +1,12 @@
 steps:
 # substitutions needed in the gcloud submit command:
-#   _LOCATION, _REPOSITORY, _IMAGE
+#   _LOCATION, _ARTIFACT_REGISTRY, _IMG
 - name: 'gcr.io/cloud-builders/docker'
   args: [ 'build',
           '-f',
           'dockerfiles/Dockerfile.extract_load',
           '-t',
-          '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_EL}',
+          '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_EL}',
           '--build-arg', 'GCP_PROJECT_ID=${PROJECT_ID}',
           '--build-arg', 'LOCATION=${LOCATION}',
           '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
@@ -19,7 +19,7 @@ steps:
           '-f',
           'dockerfiles/Dockerfile.dbt',
           '-t',
-          '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_T}',
+          '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}',
           '--build-arg', 'GCP_PROJECT_ID=${PROJECT_ID}',
           '--build-arg', 'BQ_LOCATION=${LOCATION}',
           '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
@@ -32,17 +32,17 @@ options:
 
 substitutions:
   # default values; PROJECT_ID and LOCATION are built-in
-  _REPOSITORY: ${$ARTIFACT_REGISTRY}
+  _ARTIFACT_REGISTRY: task-containers-default
   _BQ_DATASET: service_models
   _GCS_BUCKET: service-data-lake
   _SCRIPT_DIR: jobs/
   _HOST_PROJECT_DIR: dbt-core-service/
   _TARGET: prod
-  _IMAGE_EL: extraction_load
-  _IMAGE_T: dbt
+  _IMG_EL: agent_extraction_load
+  _IMG_DBT: agent_dbt
 
 # this step pushes to artifact registry
 images: [
-  '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMAGE_EL}',
-  '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMAGE_T}'
+  '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_EL}',
+  '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}'
 ]

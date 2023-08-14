@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Data engineering project to visualize frequency of Toronto service requests"
 authors = ["vykuang <vykuang92@gmail.com>"]
 readme = "README.md"
-packages = [{include = "to_service"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
