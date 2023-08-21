@@ -86,10 +86,10 @@ Clone this repo to start: `git clone https://github.com/vykuang/toronto-service-
 
 Local requirements:
 
+- python 3.10
 - gcloud - local credential should have enough permissions to create all necessary cloud resources on GCP, e.g. owner
 - gsutil
 - terraform
-- prefect
 
 ### 1 GCP
 
@@ -161,16 +161,18 @@ terraform apply
 
 - GCS bucket
 - bigquery dataset
-- GCE e2-medium instances:
+- GCE e2-medium instance:
   - `server` orchestrates prefect flow
     - start-up script installs prefect, and runs prefect server
-  - `agent` executes prefect flow
-    - start-up script installs docker, prefect, creates prefect blocks, and runs prefect agent
+  - `worker` executes prefect flow which triggers cloud run jobs
   - instance type: `e2-medium`; anything less have not been able to run prefect server/agent in my experience
     - *this is beyond free tier eligibility and will incur costs*
+- cloud build job that submits the dockerfiles
+- artifact registry to store the docker image for extract-load and dbt
+- cloud run jobs which pulls those images to execute our pipeline
 - service account with permissions to access the above resources
 
-View prefect server UI after creation completes at `http://{server-external-IP}:4200`; check that the prefect blocks for GCS storage and docker infra have been created correctly
+View prefect server UI after creation completes at `http://{server-external-IP}:4200`
 
 ### 4 Prefect
 
@@ -181,27 +183,6 @@ PREFECT_SERVER_HOST=$(gcloud compute instances describe server --zone $TF_VAR_zo
 export PREFECT_API_URL=http://$PREFECT_SERVER_HOST:4200/api
 cd service_calls_311 && ./deploy.py --apply --run
 ```
-
-### 5 dbt
-
-1. Fork the base dbt models repository - `https://github.com/vykuang/dbt-service-calls.git`
-1. Create cloud dbt account
-1. Connect to the bigquery dataset created from terraform
-   - will need to download the service account json key from cloud console for upload
-1. Connect to your forked dbt models repository
-1. Replace the `project_id` vars in `dbt_project.yml` and the `sources: database` value in `models/staging/schema.yml`
-1. run `dbt dept` and `dbt seed`
-1. Create job with command `dbt build --var="is_test_run:false"`
-1. Schedule the job on a monthly basis, to align with the frequency of the dataset update
-
-### \[optional\] docker
-
-The infrastructure to run the extract and load flows is dockerized; the `make_infra.py` block automatically pulls from a public docker hub that's been built from the local `Dockerfile`. However if you want to build your own:
-
-1. from repo root: `docker build -t docker_hub_image_name:tag .`
-1. push to public container repo: `docker push docker_hub_image_name:tag`
-   - you may need to configure docker login first
-1. change `image=docker_hub_image_name:tag` in `make_infra.py`, inside `infra_block`.
 
 ## data resources
 
@@ -223,9 +204,7 @@ Full credits to statscan and open data toronto for providing these datasets.
 
 ## Notes for improvements
 
-- move to dbt-core so that it can be orchestrated by prefect
-  - dbt cloud *can* be orchestrated, but API access requires paid accounts
-  - host dbt-core's documentations on GCS as [static website](https://cloud.google.com/storage/docs/hosting-static-website)
+- host dbt-core's documentations on GCS as [static website](https://cloud.google.com/storage/docs/hosting-static-website)
 - tests for the `extract_load` flow
 - migrate the executor to cloud run so that resources are used only when a flow deployment is active, instead of continuously running a GCE instance
 - integrate GCP's artifacts registry and cloud build to create a private docker repository that only the service account may retrieve

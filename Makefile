@@ -5,20 +5,16 @@ include user.env
 LOCAL_TAG:=$(shell date +"%Y%m%d")
 IMG_EL:=agent_extraction_load
 IMG_DBT:=agent_dbt
+JOB_EL:=extract-load
 LOCAL_IMG_EL:=service-calls:${LOCAL_TAG}
 LOCAL_IMG_DBT:=service-calls-dbt:${LOCAL_TAG}
 DOCKER_REPO:=vykuang
-ARTIFACT_REGISTRY:=$(TF_VAR_registry)
+# ARTIFACT_REGISTRY:=$(TF_VAR_registry)
 GCP_CONFIG_DIR=/home/${USER}/.config/gcloud
 GOOGLE_APPLICATION_CREDENTIALS=/home/root/.config/gcloud/application_default_credentials.json
 HOST_PROJECT_DIR:=./dbt-core-service/
 KEYFILE_LOCATION=/usr/dbt/auth/keyfile.json
 
-print_user_env:
-	@echo $(TF_VAR_bq_dataset); echo $(TFSTATE_BUCKET)
-
-source_env:
-	@set -o allexport; . user.env; set +o allexport
 
 quality_checks:
 	black --fast .
@@ -71,7 +67,17 @@ run_dbt_docker: quality_checks
 cbuild: build_prep
 	gcloud builds submit \
     --config=cloudbuild.yaml \
-	--substitutions=_ARTIFACT_REGISTRY=$(ARTIFACT_REGISTRY),_IMG_EL=$(IMG_EL),_IMG_DBT=$(IMG_DBT) .
+	--substitutions=_ARTIFACT_REGISTRY=$(TF_VAR_registry),_IMG_EL=$(IMG_EL) .
+	# ,_IMG_DBT=$(IMG_DBT)
+
+crun_create:
+	gcloud beta run jobs create ${JOB_EL} \
+	--image ${TF_VAR_region}-docker.pkg.dev/${TF_VAR_project_id}/${TF_VAR_registry}/${IMG_EL} \
+	--region ${TF_VAR_region}
+
+crun_test:
+	gcloud beta run jobs execute ${JOB_EL} \
+	--region ${TF_VAR_region}
 
 cbuild_prod: build_prep
 	gcloud builds submit \

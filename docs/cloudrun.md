@@ -268,3 +268,20 @@ To start, use one dockerfile for extract, load, and dbt?
     - year
     - overwrite
     - test
+
+### override job config for specific execution
+
+[This allows programmatic execution of jobs from code](https://cloud.google.com/run/docs/execute/jobs#override-job-configuration)
+
+Even though it's still pre-GA, this means we don't have to update job config before each execution. CLI:
+
+```bash
+gcloud beta run jobs execute JOB_NAME \
+     --args ARGS \
+     --update-env-vars KEY=VALUE>,KEY_N=VALUE_N \
+     --tasks TASKS \
+     --task-timeout TIMEOUT
+```
+
+- Requires upgrade of gcloud SDK
+- rebuild image to fix "unexpected keyword: loglevel" error in extract_load.py

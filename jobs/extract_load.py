@@ -345,6 +345,7 @@ def extract_load_service_calls(
     year: str,
     overwrite: bool = False,
     test: bool = False,
+    loglevel: str = "INFO",
 ):
     """
     Extracts CSV as parquets and loads into bigquery dataset
@@ -363,7 +364,7 @@ def extract_load_service_calls(
         if true, load only a small subset onto bigquery
 
     """
-    num_loglevel = getattr(logging, num_loglevel.upper(), None)
+    num_loglevel = getattr(logging, loglevel.upper(), None)
     if not isinstance(num_loglevel, int):
         raise ValueError(f"Invalid log level: {num_loglevel}")
     logger.setLevel(level=num_loglevel)

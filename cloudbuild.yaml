@@ -6,43 +6,42 @@ steps:
           '-f',
           'dockerfiles/Dockerfile.extract_load',
           '-t',
-          '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_EL}',
-          '--build-arg', 'GCP_PROJECT_ID=${PROJECT_ID}',
-          '--build-arg', 'LOCATION=${LOCATION}',
+          '${_GCP_LOC}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_EL}',
+          '--build-arg', 'GCP_LOC=${_GCP_LOC}',
           '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
           '--build-arg', 'GCS_BUCKET=${_GCS_BUCKET}',
           '--build-arg', 'SCRIPT_DIR=${_SCRIPT_DIR}',
           '.' ]
 
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build',
-          '-f',
-          'dockerfiles/Dockerfile.dbt',
-          '-t',
-          '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}',
-          '--build-arg', 'GCP_PROJECT_ID=${PROJECT_ID}',
-          '--build-arg', 'BQ_LOCATION=${LOCATION}',
-          '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
-          '--build-arg', 'HOST_PROJECT_DIR=${_HOST_PROJECT_DIR}',
-          '--build-arg', 'TARGET=${_TARGET}',
-          '.' ]
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [ 'build',
+#           '-f',
+#           'dockerfiles/Dockerfile.dbt',
+#           '-t',
+#           '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}',
+#           '--build-arg', 'BQ_LOCATION=${_GCP_LOC}',
+#           '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
+#           '--build-arg', 'HOST_PROJECT_DIR=${_HOST_PROJECT_DIR}',
+#           '--build-arg', 'TARGET=${_TARGET}',
+#           '.' ]
 
 options:
     dynamic_substitutions: true
 
 substitutions:
-  # default values; PROJECT_ID and LOCATION are built-in
+  # default values; PROJECT_ID and LOCATION are built-in; LOCATION defaults to global
+  _GCP_LOC: us-west1
   _ARTIFACT_REGISTRY: task-containers-default
-  _BQ_DATASET: service_models
-  _GCS_BUCKET: service-data-lake
+  _BQ_DATASET: service_calls_models
+  _GCS_BUCKET: service-data-lake-564
   _SCRIPT_DIR: jobs/
-  _HOST_PROJECT_DIR: dbt-core-service/
-  _TARGET: prod
   _IMG_EL: agent_extraction_load
-  _IMG_DBT: agent_dbt
+  # _HOST_PROJECT_DIR: dbt-core-service/
+  # _TARGET: prod
+  # _IMG_DBT: agent_dbt
 
 # this step pushes to artifact registry
 images: [
-  '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_EL}',
-  '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}'
+  '${_GCP_LOC}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_EL}',
+  # '${_GCP_LOC}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}'
 ]
