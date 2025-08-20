@@ -86,7 +86,9 @@ Clone this repo to start: `git clone https://github.com/vykuang/toronto-service-
 
 Local requirements:
 
-- python 3.10
+- python 3.11
+- poetry to manage python package dependencies
+    - `poetry install` inside project root
 - gcloud - local credential should have enough permissions to create all necessary cloud resources on GCP, e.g. owner
 - gsutil
 - terraform
@@ -161,11 +163,11 @@ terraform apply
 
 - GCS bucket
 - bigquery dataset
-- GCE e2-medium instance:
+- GCE e2-medium instance with container optimized images (COS):
   - `server` orchestrates prefect flow
-    - start-up script installs prefect, and runs prefect server
+    - start-up script pulls prefect, and runs dockerized prefect server
   - `worker` executes prefect flow which triggers cloud run jobs
-  - instance type: `e2-medium`; anything less have not been able to run prefect server/agent in my experience
+  - instance type: `e2-medium`; anything less have not been able to run prefect server/worker in my experience
     - *this is beyond free tier eligibility and will incur costs*
 - cloud build job that submits the dockerfiles
 - artifact registry to store the docker image for extract-load and dbt
@@ -179,7 +181,7 @@ View prefect server UI after creation completes at `http://{server-external-IP}:
 Deploy the flow; scheduled to run on 1st of every month
 
 ```sh
-PREFECT_SERVER_HOST=$(gcloud compute instances describe server --zone $TF_VAR_zone| grep natIP | cut -d: -f 2 | tr -d ' ' | tail -n 1)
+PREFECT_SERVER_HOST=$(gcloud compute instances list --filter="name=('server')" --format "value(EXTERNAL_IP)")
 export PREFECT_API_URL=http://$PREFECT_SERVER_HOST:4200/api
 cd service_calls_311 && ./deploy.py --apply --run
 ```

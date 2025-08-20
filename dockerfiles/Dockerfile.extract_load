@@ -1,7 +1,8 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # pass at build time with --build-arg <var_name>=<value>
 # only useable in docker build scope
+# spec'd in cloudbuild.yaml under substitutions
 ARG GCP_PROJECT_ID
 ARG LOCATION
 ARG BQ_DATASET

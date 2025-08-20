@@ -202,8 +202,19 @@ To start, use one dockerfile for extract, load, and dbt?
 
 - dockerfile with all dependencies
   - use `poetry export` and `pip install -r requirements.txt`
+  - `poetry export -o dockerfiles/requirements.txt --only=main`
 - create artifacts repo in `gcr.io` domain
   - `us-west1-docker.pkg.dev/service-calls-dev/task-containers`
+  - `gcloud auth configure-docker us-west1-docker.pkg.dev` to enable pulling from newly created repo
+  
+  ```shell
+    gcloud artifacts repositories create task-containers-default \
+      --repository-format=docker \
+      --location=us-west1 \
+      --description="default task container repo" \
+      --async \
+      --disable-vulnerability-scanning
+    ```
 - shell script to submit to cloud build and artifacts
   - create `cloudbuild.yaml` [from this template which uses user substitutions](https://cloud.google.com/artifact-registry/docs/configure-cloud-build#docker)
   - `gcloud builds submit --config=cloudbuild.yaml \  --substitutions=_LOCATION="us-west1",_REPOSITORY="task-containers",_IMAGE="my-image" .`

@@ -13,17 +13,7 @@ steps:
           '--build-arg', 'SCRIPT_DIR=${_SCRIPT_DIR}',
           '.' ]
 
-# - name: 'gcr.io/cloud-builders/docker'
-#   args: [ 'build',
-#           '-f',
-#           'dockerfiles/Dockerfile.dbt',
-#           '-t',
-#           '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_IMG_DBT}',
-#           '--build-arg', 'BQ_LOCATION=${_GCP_LOC}',
-#           '--build-arg', 'BQ_DATASET=${_BQ_DATASET}',
-#           '--build-arg', 'HOST_PROJECT_DIR=${_HOST_PROJECT_DIR}',
-#           '--build-arg', 'TARGET=${_TARGET}',
-#           '.' ]
+
 
 options:
     dynamic_substitutions: true
@@ -32,10 +22,10 @@ substitutions:
   # default values; PROJECT_ID and LOCATION are built-in; LOCATION defaults to global
   _GCP_LOC: us-west1
   _ARTIFACT_REGISTRY: task-containers-default
-  _BQ_DATASET: service_calls_models
-  _GCS_BUCKET: service-data-lake-564
+  _BQ_DATASET: service_311_models
+  _GCS_BUCKET: service-311-datalake
   _SCRIPT_DIR: jobs/
-  _IMG_EL: agent_extraction_load
+  _IMG_EL: worker_extraction_load
   # _HOST_PROJECT_DIR: dbt-core-service/
   # _TARGET: prod
   # _IMG_DBT: agent_dbt

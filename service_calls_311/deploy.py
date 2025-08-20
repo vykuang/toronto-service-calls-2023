@@ -2,7 +2,7 @@
 
 import os
 import argparse
-from flows.extract_load import extract_load_service_calls
+from service_calls_311.extract_load import extract_load_service_calls
 from prefect.deployments import Deployment, run_deployment
 from prefect.filesystems import GCS
 from prefect.infrastructure.docker import DockerContainer

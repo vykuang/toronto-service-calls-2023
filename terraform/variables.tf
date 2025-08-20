@@ -63,14 +63,16 @@ variable "geojson_path" {
   type        = string
   default     = "../data/city-wards-boundary-nldelim.geojson"
 }
-
+# view with gcloud services list
 variable "gcp_service_list" {
   type = set(string)
   default = [
+    "artifactregistry.googleapis.com",
     "compute.googleapis.com",
     "storage-component.googleapis.com",
     "bigquery.googleapis.com",
     "iam.googleapis.com",
+    "cloudbuild.googleapis.com"
   ]
   description = "APIs to be enabled in GCP project"
 }

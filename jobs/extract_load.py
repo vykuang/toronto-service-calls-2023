@@ -9,14 +9,14 @@ import pandas as pd
 from tempfile import TemporaryDirectory
 import argparse
 import logging
-
+from datetime import date
 import os
 
 
 GOOGLE_CLOUD_PROJECT = os.getenv("TF_VAR_project_id")
 os.environ["GOOGLE_CLOUD_PROJECT"] = GOOGLE_CLOUD_PROJECT
 LOCATION = os.getenv("TF_VAR_region")
-BUCKET = os.getenv("TF_VAR_gcs_bucket")
+BUCKET = os.getenv("TF_VAR_datalake_bucket")
 DATASET = os.getenv("TF_VAR_bq_dataset")
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
@@ -117,6 +117,8 @@ def convert_to_parquet(csv_path: Path, pq_path: Path, test: bool = False) -> Non
         nrows = 100
     else:
         nrows = None
+    # https://stackoverflow.com/a/51763708 since pd.read_csv cannot skip encoding errors
+    csv_path = open(csv_path, encoding='utf8', errors='backslashreplace')
     df = pd.read_csv(
         csv_path,
         nrows=nrows,
@@ -375,8 +377,8 @@ def extract_load_service_calls(
             if not all([name[0].isalnum(), name[-1].isalnum()]):
                 raise ValueError(f"Invalid bucket or dataset name: {name}")
         except TypeError as e:
-            print(e("Empty name for bucket or dataset"))
-    if int(year) < 2015 or int(year) > 2023:
+            print(e, ": Empty name for bucket or dataset")
+    if int(year) < 2015 or int(year) > date.today().year:
         raise ValueError(f"Invalid year: {year}")
     gs_pq_path = extract_service_calls(
         bucket_name=bucket_name,

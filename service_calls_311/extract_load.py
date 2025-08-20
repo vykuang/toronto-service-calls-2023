@@ -9,7 +9,8 @@ import pandas as pd
 from tempfile import TemporaryDirectory
 import argparse
 from prefect import flow, task, get_run_logger
-from prefect_dbt.cli.commands import DbtCoreOperation, trigger_dbt_cli_command
+from prefect_dbt import PrefectDbtRunner, PrefectDbtSettings
+# from prefect_dbt.cli.commands import DbtCoreOperation, trigger_dbt_cli_command
 
 # from dotenv import load_dotenv
 import os
@@ -22,7 +23,7 @@ LOCATION = os.getenv("TF_VAR_region")
 BUCKET = os.getenv("TF_VAR_data_lake_bucket")
 DATASET = os.getenv("TF_VAR_bq_dataset")
 
-DBT_PROJECT_DIR = "/home/kohada/dbt-core-service-calls"
+DBT_PROJECT_DIR = "/home/kohada/toronto-service-calls-2023/dbt-core-service-calls"
 
 # Toronto Open Data is stored in a CKAN instance. It's APIs are documented here:
 # https://docs.ckan.org/en/latest/api/
@@ -351,16 +352,21 @@ def load(src_uris: str, dataset_name: str, year: str):
 
 
 @flow
-def transform() -> str:
+def transform() -> None:
     """
     Invokes dbt-core to transform dataset within bigquery
     """
-    result = DbtCoreOperation(
-        commands=["pwd", "dbt debug", "dbt test"],
-        project_dir=DBT_PROJECT_DIR,
-        profiles_dir=DBT_PROJECT_DIR,
-    ).run()
-    return result
+    # result = DbtCoreOperation(
+    #     commands=["pwd", "dbt debug", "dbt test"],
+    #     project_dir=DBT_PROJECT_DIR,
+    #     profiles_dir=DBT_PROJECT_DIR,
+    # ).run()
+    PrefectDbtRunner(
+        settings=PrefectDbtSettings(
+            project_dir=DBT_PROJECT_DIR,
+            profiles_dir=DBT_PROJECT_DIR,
+        )
+    ).invoke(["build"])
 
 
 @flow
@@ -394,7 +400,7 @@ def extract_load_service_calls(
     for name in [bucket_name, dataset_name]:
         if not all([name[0].isalnum(), name[-1].isalnum()]):
             raise ValueError(f"Invalid bucket or dataset name: {name}")
-    if int(year) < 2015 or int(year) > 2023:
+    if int(year) < 2015 or int(year) > 2025:
         raise ValueError(f"Invalid year: {year}")
     gs_pq_path = extract_service_calls(
         bucket_name=bucket_name,
@@ -443,10 +449,13 @@ if __name__ == "__main__":
         help="If specified, only reads small section of csv",
     )
     args = parser.parse_args()
-    extract_load_service_calls(
-        bucket_name=args.bucket_name,
-        dataset_name=args.dataset_name,
-        year=args.year,
-        overwrite=args.overwrite,
-        test=args.test,
+    extract_load_service_calls.deploy(
+        name="service-calls-deploy",
+        work_pool_name="service-calls",
+        parameters={
+            "bucket_name":args.bucket_name,
+            "dataset_name":args.dataset_name,
+            "year":args.year,
+            "overwrite":args.overwrite,
+            "test":args.test},
     )

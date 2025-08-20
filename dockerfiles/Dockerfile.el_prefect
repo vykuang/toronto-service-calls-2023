@@ -1,0 +1,27 @@
+FROM python:3.11-slim
+
+# pass at build time with --build-arg <var_name>=<value>
+# only useable in docker build scope
+# spec'd in cloudbuild.yaml under substitutions
+ARG TF_VAR_project_id
+ARG TF_VAR_region
+ARG TF_VAR_gcs_bucket
+ARG TF_VAR_bq_dataset
+
+# persists in image
+ENV TF_VAR_project_id=${TF_VAR_project_id}
+ENV TF_VAR_region=${TF_VAR_region}
+ENV TF_VAR_gcs_bucket=${TF_VAR_gcs_bucket}
+ENV TF_VAR_bq_dataset=${TF_VAR_bq_dataset}
+
+WORKDIR /tmp
+
+COPY dockerfiles/requirements.txt ./
+RUN pip install --no-cache-dir --no-input --no-deps -r requirements.txt
+
+# WORKDIR /app
+# COPY ${SCRIPT_DIR}/extract_load.py ./
+
+# ENTRYPOINT [ "python3", "extract_load.py" ]
+# ## CMD will be updated by job config
+# CMD [ "--year", "2023", "--overwrite", ]
